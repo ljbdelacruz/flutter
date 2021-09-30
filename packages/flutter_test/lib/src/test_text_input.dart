@@ -52,14 +52,20 @@ class TestTextInput {
     register();
   }
   /// Installs this object as a mock handler for [SystemChannels.textInput].
-  void register() => SystemChannels.textInput.setMockMethodCallHandler(_handleTextInputCall);
+  void register() {
+    SystemChannels.textInput.setMockMethodCallHandler(_handleTextInputCall);
+    _isRegistered = true;
+  }
 
   /// Removes this object as a mock handler for [SystemChannels.textInput].
   ///
   /// After calling this method, the channel will exchange messages with the
   /// Flutter engine. Use this with [FlutterDriver] tests that need to display
   /// on-screen keyboard provided by the operating system.
-  void unregister() => SystemChannels.textInput.setMockMethodCallHandler(null);
+  void unregister() {
+    SystemChannels.textInput.setMockMethodCallHandler(null);
+    _isRegistered = false;
+  }
 
   /// Log for method calls.
   ///
@@ -70,13 +76,12 @@ class TestTextInput {
   /// Whether this [TestTextInput] is registered with [SystemChannels.textInput].
   ///
   /// Use [register] and [unregister] methods to control this value.
-  bool get isRegistered => SystemChannels.textInput.checkMockMethodCallHandler(_handleTextInputCall);
+  // TODO(dnfield): This is unreliable. https://github.com/flutter/flutter/issues/47180
+  bool get isRegistered => _isRegistered;
+  bool _isRegistered = false;
 
   /// Whether there are any active clients listening to text input.
-  bool get hasAnyClients {
-    assert(isRegistered);
-    return _client > 0;
-  }
+  bool get hasAnyClients => _client > 0;
 
   int _client = 0;
 
@@ -117,15 +122,11 @@ class TestTextInput {
   }
 
   /// Whether the onscreen keyboard is visible to the user.
-  bool get isVisible {
-    assert(isRegistered);
-    return _isVisible;
-  }
+  bool get isVisible => _isVisible;
   bool _isVisible = false;
 
   /// Simulates the user changing the [TextEditingValue] to the given value.
   void updateEditingValue(TextEditingValue value) {
-    assert(isRegistered);
     // Not using the `expect` function because in the case of a FlutterDriver
     // test this code does not run in a package:test test zone.
     if (_client == 0)
@@ -148,7 +149,6 @@ class TestTextInput {
   /// - User pressed the home button and sent the application to background.
   /// - User closed the virtual keyboard.
   void closeConnection() {
-    assert(isRegistered);
     // Not using the `expect` function because in the case of a FlutterDriver
     // test this code does not run in a package:test test zone.
     if (_client == 0)
@@ -167,7 +167,6 @@ class TestTextInput {
 
   /// Simulates the user typing the given text.
   void enterText(String text) {
-    assert(isRegistered);
     updateEditingValue(TextEditingValue(
       text: text,
     ));
@@ -177,7 +176,6 @@ class TestTextInput {
   /// Does not check that the [TextInputAction] performed is an acceptable one
   /// based on the `inputAction` [setClientArgs].
   Future<void> receiveAction(TextInputAction action) async {
-    assert(isRegistered);
     return TestAsyncUtils.guard(() {
       // Not using the `expect` function because in the case of a FlutterDriver
       // test this code does not run in a package:test test zone.
@@ -217,7 +215,6 @@ class TestTextInput {
 
   /// Simulates the user hiding the onscreen keyboard.
   void hide() {
-    assert(isRegistered);
     _isVisible = false;
   }
 }

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,14 +11,12 @@ class SimpleExpansionPanelListTestWidget extends StatefulWidget {
     this.firstPanelKey,
     this.secondPanelKey,
     this.canTapOnHeader = false,
-    this.expandedHeaderPadding,
-    this.dividerColor,
+    this.expandedHeaderPadding
   }) : super(key: key);
 
   final Key firstPanelKey;
   final Key secondPanelKey;
   final bool canTapOnHeader;
-  final Color dividerColor;
 
   /// If null, the default [ExpansionPanelList]'s expanded header padding value is applied via [defaultExpandedHeaderPadding]
   final EdgeInsets expandedHeaderPadding;
@@ -47,7 +43,6 @@ class _SimpleExpansionPanelListTestWidgetState extends State<SimpleExpansionPane
           extendedState[_index] = !extendedState[_index];
         });
       },
-      dividerColor: widget.dividerColor,
       children: <ExpansionPanel>[
         ExpansionPanel(
           headerBuilder: (BuildContext context, bool isExpanded) {
@@ -941,7 +936,7 @@ void main() {
       ),
     );
 
-    // Check the semantics of [ExpandIcon] for expanded panel.
+    // Check the semantics of [ExpanIcon] for expanded panel.
     final Finder expandedIcon = find.descendant(
       of: find.ancestor(
         of: find.byKey(expandedKey),
@@ -965,7 +960,7 @@ void main() {
       label: 'Expanded',
     ));
 
-    // Check the semantics of [ExpandIcon] for collapsed panel.
+    // Check the semantics of [ExpanIcon] for collapsed panel.
     final Finder collapsedIcon = find.descendant(
       of: find.ancestor(
         of: find.byKey(collapsedKey),
@@ -1345,55 +1340,5 @@ void main() {
     box = tester.renderObject(find.ancestor(of: find.byKey(firstPanelKey), matching: find.byType(AnimatedContainer)).first);
     expect(box.size.height, equals(128.0)); // _kPanelHeaderCollapsedHeight + 80.0 (double padding)
     expect(box.size.width, equals(736.0));
-  });
-
-  testWidgets('ExpansionPanelList respects dividerColor', (WidgetTester tester) async {
-    const Color dividerColor = Colors.red;
-    await tester.pumpWidget(const MaterialApp(
-      home: SingleChildScrollView(
-        child: SimpleExpansionPanelListTestWidget(
-          dividerColor: dividerColor,
-        ),
-      ),
-    ));
-
-    final DecoratedBox decoratedBox = tester.widget(find.byType(DecoratedBox).last);
-    final BoxDecoration decoration = decoratedBox.decoration as BoxDecoration;
-
-    // For the last DecoratedBox, we will have a Border.top with the provided dividerColor.
-    expect(decoration.border.top.color, dividerColor);
-  });
-
-  testWidgets('ExpansionPanelList.radio respects DividerColor', (WidgetTester tester) async {
-    const Color dividerColor = Colors.red;
-    await tester.pumpWidget(MaterialApp(
-      home: SingleChildScrollView(
-        child: ExpansionPanelList.radio(
-          dividerColor: dividerColor,
-          children: <ExpansionPanelRadio>[
-            ExpansionPanelRadio(
-              headerBuilder: (BuildContext context, bool isExpanded) {
-                return Text(isExpanded ? 'B' : 'A', key: const Key('firstKey'));
-              },
-              body: const SizedBox(height: 100.0),
-              value: 0,
-            ),
-            ExpansionPanelRadio(
-              headerBuilder: (BuildContext context, bool isExpanded) {
-                return Text(isExpanded ? 'D' : 'C', key: const Key('secondKey'));
-              },
-              body: const SizedBox(height: 100.0),
-              value: 1,
-            ),
-          ],
-        ),
-      ),
-    ));
-
-    final DecoratedBox decoratedBox = tester.widget(find.byType(DecoratedBox).last);
-    final BoxDecoration boxDecoration = decoratedBox.decoration as BoxDecoration;
-
-    // For the last DecoratedBox, we will have a Border.top with the provided dividerColor.
-    expect(boxDecoration.border.top.color, dividerColor);
   });
 }

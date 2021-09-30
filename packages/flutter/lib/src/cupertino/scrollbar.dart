@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
@@ -64,8 +62,7 @@ class CupertinoScrollbar extends StatefulWidget {
     this.controller,
     this.isAlwaysShown = false,
     @required this.child,
-  }) : assert(!isAlwaysShown || controller != null, 'When isAlwaysShown is true, must pass a controller that is attached to a scroll view'),
-       super(key: key);
+  }) : super(key: key);
 
   /// The subtree to place inside the [CupertinoScrollbar].
   ///
@@ -241,7 +238,15 @@ class _CupertinoScrollbarState extends State<CupertinoScrollbar> with TickerProv
         ..color = CupertinoDynamicColor.resolve(_kScrollbarColor, context)
         ..padding = MediaQuery.of(context).padding;
     }
-    _triggerScrollbar();
+    WidgetsBinding.instance.addPostFrameCallback((Duration duration) {
+      if (widget.isAlwaysShown) {
+        assert(widget.controller != null);
+        // Wait one frame and cause an empty scroll event.  This allows the
+        // thumb to show immediately when isAlwaysShown is true.  A scroll
+        // event is required in order to paint the thumb.
+        widget.controller.position.didUpdateScrollPositionBy(0);
+      }
+    });
   }
 
   @override
@@ -249,7 +254,7 @@ class _CupertinoScrollbarState extends State<CupertinoScrollbar> with TickerProv
     super.didUpdateWidget(oldWidget);
     if (widget.isAlwaysShown != oldWidget.isAlwaysShown) {
       if (widget.isAlwaysShown == true) {
-        _triggerScrollbar();
+        assert(widget.controller != null);
         _fadeoutAnimationController.animateTo(1.0);
       } else {
         _fadeoutAnimationController.reverse();
@@ -271,18 +276,6 @@ class _CupertinoScrollbarState extends State<CupertinoScrollbar> with TickerProv
       minLength: _kScrollbarMinLength,
       minOverscrollLength: _kScrollbarMinOverscrollLength,
     );
-  }
-
-  // Wait one frame and cause an empty scroll event.  This allows the thumb to
-  // show immediately when isAlwaysShown is true.  A scroll event is required in
-  // order to paint the thumb.
-  void _triggerScrollbar() {
-    WidgetsBinding.instance.addPostFrameCallback((Duration duration) {
-      if (widget.isAlwaysShown) {
-        _fadeoutTimer?.cancel();
-        widget.controller.position.didUpdateScrollPositionBy(0);
-      }
-    });
   }
 
   // Handle a gesture that drags the scrollbar by the given amount.

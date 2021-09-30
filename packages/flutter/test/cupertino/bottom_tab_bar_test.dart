@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,16 +11,9 @@ import '../widgets/semantics_tester.dart';
 
 Future<void> pumpWidgetWithBoilerplate(WidgetTester tester, Widget widget) async {
   await tester.pumpWidget(
-    Localizations(
-      locale: const Locale('en', 'US'),
-      delegates: const <LocalizationsDelegate<dynamic>>[
-        DefaultWidgetsLocalizations.delegate,
-        DefaultCupertinoLocalizations.delegate,
-      ],
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: widget,
-      ),
+    Directionality(
+      textDirection: TextDirection.ltr,
+      child: widget,
     ),
   );
 }
@@ -387,14 +378,14 @@ void main() {
 
     expect(semantics, includesNodeWith(
       label: 'Tab 1',
-      hint: 'Tab 1 of 2',
+      hint: 'tab, 1 of 2',
       flags: <SemanticsFlag>[SemanticsFlag.isSelected],
       textDirection: TextDirection.ltr,
     ));
 
     expect(semantics, includesNodeWith(
       label: 'Tab 2',
-      hint: 'Tab 2 of 2',
+      hint: 'tab, 2 of 2',
       textDirection: TextDirection.ltr,
     ));
 

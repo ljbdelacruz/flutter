@@ -51,12 +51,8 @@ class BuildAotCommand extends BuildSubCommand with TargetPlatformBasedDevelopmen
   @override
   final String name = 'aot';
 
-  // TODO(jonahwilliams): remove after https://github.com/flutter/flutter/issues/49562 is resolved.
   @override
-  bool get deprecated => true;
-
-  @override
-  final String description = "(deprecated) Build an ahead-of-time compiled snapshot of your app's Dart code.";
+  final String description = "Build an ahead-of-time compiled snapshot of your app's Dart code.";
 
   @override
   Future<FlutterCommandResult> runCommand() async {

@@ -4,8 +4,6 @@
 
 import 'dart:async';
 
-import 'package:vm_service/vm_service.dart' as vm_service;
-
 import '../base/common.dart';
 import '../base/file_system.dart';
 import '../convert.dart';
@@ -125,35 +123,37 @@ class ScreenshotCommand extends FlutterCommand {
   }
 
   Future<void> runSkia(File outputFile) async {
-    final Uri observatoryUri = Uri.parse(stringArg(_kObservatoryUri));
-    final vm_service.VmService vmService = await connectToVmService(observatoryUri);
-    final vm_service.Response skp = await vmService.screenshotSkp();
+    final Map<String, dynamic> skp = await _invokeVmServiceRpc('_flutter.screenshotSkp');
     outputFile ??= globals.fsUtils.getUniqueFile(
       globals.fs.currentDirectory,
       'flutter',
       'skp',
     );
     final IOSink sink = outputFile.openWrite();
-    sink.add(base64.decode(skp.json['skp'] as String));
+    sink.add(base64.decode(skp['skp'] as String));
     await sink.close();
     _showOutputFileInfo(outputFile);
     _ensureOutputIsNotJsonRpcError(outputFile);
   }
 
   Future<void> runRasterizer(File outputFile) async {
-    final Uri observatoryUri = Uri.parse(stringArg(_kObservatoryUri));
-    final vm_service.VmService vmService = await connectToVmService(observatoryUri);
-    final vm_service.Response response = await vmService.screenshot();
+    final Map<String, dynamic> response = await _invokeVmServiceRpc('_flutter.screenshot');
     outputFile ??= globals.fsUtils.getUniqueFile(
       globals.fs.currentDirectory,
       'flutter',
       'png',
     );
     final IOSink sink = outputFile.openWrite();
-    sink.add(base64.decode(response.json['screenshot'] as String));
+    sink.add(base64.decode(response['screenshot'] as String));
     await sink.close();
     _showOutputFileInfo(outputFile);
     _ensureOutputIsNotJsonRpcError(outputFile);
+  }
+
+  Future<Map<String, dynamic>> _invokeVmServiceRpc(String method) async {
+    final Uri observatoryUri = Uri.parse(stringArg(_kObservatoryUri));
+    final VMService vmService = await VMService.connect(observatoryUri);
+    return await vmService.vm.invokeRpcRaw(method);
   }
 
   void _ensureOutputIsNotJsonRpcError(File outputFile) {

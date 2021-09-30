@@ -4,13 +4,12 @@
 
 import 'package:file/memory.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
-import 'package:flutter_tools/src/base/logger.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/doctor.dart';
 import 'package:flutter_tools/src/web/chrome.dart';
 import 'package:flutter_tools/src/web/web_validator.dart';
 import 'package:mockito/mockito.dart';
 import 'package:process/process.dart';
+import 'package:platform/platform.dart';
 
 import '../../src/common.dart';
 import '../../src/fake_process_manager.dart';
@@ -18,9 +17,9 @@ import '../../src/fake_process_manager.dart';
 void main() {
   Platform platform;
   ProcessManager processManager;
-  ChromiumLauncher chromeLauncher;
+  ChromeLauncher chromeLauncher;
   FileSystem fileSystem;
-  ChromiumValidator webValidator;
+  WebValidator webValidator;
 
   setUp(() {
     fileSystem = MemoryFileSystem.test();
@@ -29,17 +28,17 @@ void main() {
       operatingSystem: 'macos',
       environment: <String, String>{},
     );
-    chromeLauncher = ChromiumLauncher(
+    chromeLauncher = ChromeLauncher(
       fileSystem: fileSystem,
       platform: platform,
       processManager: processManager,
       operatingSystemUtils: null,
-      logger: BufferLogger.test(),
-      browserFinder: findChromeExecutable,
+      logger: null,
     );
-    webValidator = webValidator = ChromeValidator(
+    webValidator = webValidator = WebValidator(
       platform: platform,
-      chromiumLauncher: chromeLauncher,
+      chromeLauncher: chromeLauncher,
+      fileSystem: fileSystem,
     );
   });
 
@@ -64,7 +63,7 @@ void main() {
 
     final ValidationResult result = await webValidator.validate();
 
-    expect(result.messages, const <ValidationMessage>[
+    expect(result.messages, <ValidationMessage>[
       ValidationMessage.hint(
           'Cannot find Chrome. Try setting CHROME_EXECUTABLE to a Chrome executable.'),
     ]);

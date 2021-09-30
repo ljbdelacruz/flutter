@@ -96,7 +96,7 @@ abstract class GoldenFileComparator {
 
   /// Returns a [ComparisonResult] to describe the pixel differential of the
   /// [test] and [master] image bytes provided.
-  static Future<ComparisonResult> compareLists(List<int> test, List<int> master) {
+  static ComparisonResult compareLists(List<int> test, List<int> master) {
     return _goldens.compareLists(test, master);
   }
 }

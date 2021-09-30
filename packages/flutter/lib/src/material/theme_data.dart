@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui' show Color, hashList, lerpDouble;
 
 import 'package:flutter/cupertino.dart';
@@ -14,7 +12,6 @@ import 'package:flutter/widgets.dart';
 import 'app_bar_theme.dart';
 import 'banner_theme.dart';
 import 'bottom_app_bar_theme.dart';
-import 'bottom_navigation_bar_theme.dart';
 import 'bottom_sheet_theme.dart';
 import 'button_bar_theme.dart';
 import 'button_theme.dart';
@@ -35,7 +32,6 @@ import 'slider_theme.dart';
 import 'snack_bar_theme.dart';
 import 'tab_bar_theme.dart';
 import 'text_theme.dart';
-import 'time_picker_theme.dart';
 import 'toggle_buttons_theme.dart';
 import 'tooltip_theme.dart';
 import 'typography.dart';
@@ -95,51 +91,43 @@ enum MaterialTapTargetSize {
   shrinkWrap,
 }
 
-/// Defines the configuration of the overall visual [Theme] for a [MaterialApp]
-/// or a widget subtree within the app.
+/// Holds the color and typography values for a material design theme.
 ///
-/// The [MaterialApp] theme property can be used to configure the appearance
-/// of the entire app. Widget subtree's within an app can override the app's
-/// theme by including a [Theme] widget at the top of the subtree.
+/// Use this class to configure a [Theme] or [MaterialApp] widget.
 ///
-/// Widgets whose appearance should align with the overall theme can obtain the
-/// current theme's configuration with [Theme.of]. Material components typically
-/// depend exclusively on the [colorScheme] and [textTheme]. These properties
-/// are guaranteed to have non-null values.
-///
-/// The static [Theme.of] method finds the [ThemeData] value specified for the
-/// nearest [BuildContext] ancestor. This lookup is inexpensive, essentially
-/// just a single HashMap access. It can sometimes be a little confusing
-/// because [Theme.of] can not see a [Theme] widget that is defined in the
-/// current build method's context. To overcome that, create a new custom widget
-/// for the subtree that appears below the new [Theme], or insert a widget
-/// that creates a new BuildContext, like [Builder].
+/// To obtain the current theme, use [Theme.of].
 ///
 /// {@tool snippet}
-/// In this example, the [Container] widget uses [Theme.of] to retrieve the
-/// primary color from the theme's [colorScheme] to draw an amber square.
-/// The [Builder] widget separates the parent theme's [BuildContext] from the
-/// child's [BuildContext].
+///
+/// This sample creates a [Theme] widget that stores the `ThemeData`. The
+/// `ThemeData` can be accessed by descendant Widgets that use the correct
+/// `context`. This example uses the [Builder] widget to gain access to a
+/// descendant `context` that contains the `ThemeData`.
+///
+/// The [Container] widget uses [Theme.of] to retrieve the [primaryColor] from
+/// the `ThemeData` to draw an amber square.
 ///
 /// ![](https://flutter.github.io/assets-for-api-docs/assets/material/theme_data.png)
 ///
 /// ```dart
 /// Theme(
-///   data: ThemeData.from(
-///     colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.amber),
-///   ),
+///   data: ThemeData(primaryColor: Colors.amber),
 ///   child: Builder(
 ///     builder: (BuildContext context) {
 ///       return Container(
 ///         width: 100,
 ///         height: 100,
-///         color: Theme.of(context).colorScheme.primary,
+///         color: Theme.of(context).primaryColor,
 ///       );
 ///     },
 ///   ),
 /// )
 /// ```
 /// {@end-tool}
+///
+/// In addition to using the [Theme] widget, you can provide `ThemeData` to a
+/// [MaterialApp]. The `ThemeData` will be used throughout the app to style
+/// material design widgets.
 ///
 /// {@tool snippet}
 ///
@@ -175,33 +163,42 @@ enum MaterialTapTargetSize {
 /// )
 /// ```
 /// {@end-tool}
-///
-/// See <https://material.io/design/color/> for
-/// more discussion on how to pick the right colors.
-
 @immutable
 class ThemeData with Diagnosticable {
-  /// Create a [ThemeData] that's used to configure a [Theme].
+  /// Create a [ThemeData] given a set of preferred values.
   ///
-  /// Typically, only the [brightness], [primaryColor], or [primarySwatch] are
-  /// specified. That pair of values are used to construct the [colorScheme].
+  /// Default values will be derived for arguments that are omitted.
   ///
-  /// The [colorScheme] and [textTheme] are used by the Material components to
-  /// compute default values for visual properties. The API documentation for
-  /// each component widget explains exactly how the defaults are computed.
+  /// The most useful values to give are, in order of importance:
   ///
-  /// The [textTheme] [TextStyle] colors are black if the color scheme's
-  /// brightness is [Brightness.light], and white for [Brightness.dark].
+  ///  * The desired theme [brightness].
   ///
-  /// To override the appearance of specific components, provide
-  /// a component theme parameter like [sliderTheme], [toggleButtonsTheme],
-  /// or [bottomNavigationBarTheme].
+  ///  * The primary color palette (the [primarySwatch]), chosen from
+  ///    one of the swatches defined by the material design spec. This
+  ///    should be one of the maps from the [Colors] class that do not
+  ///    have "accent" in their name.
   ///
-  /// See also:
+  ///  * The [accentColor], sometimes called the secondary color, and,
+  ///    if the accent color is specified, its brightness
+  ///    ([accentColorBrightness]), so that the right contrasting text
+  ///    color will be used over the accent color.
   ///
-  ///  * [ThemeData.from], which creates a ThemeData from a [ColorScheme].
-  ///  * [ThemeData.light], which creates a light blue theme.
-  ///  * [ThemeData.dark], which creates dark theme with a teal secondary [ColorScheme] color.
+  /// Most of these parameters map to the [ThemeData] field with the same name,
+  /// all of which are described in more detail on the fields themselves. The
+  /// exceptions are:
+  ///
+  ///  * [primarySwatch] - used to configure default values for several fields,
+  ///    including: [primaryColor], [primaryColorBrightness], [primaryColorLight],
+  ///    [primaryColorDark], [toggleableActiveColor], [accentColor], [colorScheme],
+  ///    [secondaryHeaderColor], [textSelectionColor], [backgroundColor], and
+  ///    [buttonColor].
+  ///
+  ///  * [fontFamily] - sets the default fontFamily for any
+  ///    [TextStyle.fontFamily] that isn't set directly in the [textTheme],
+  ///    [primaryTextTheme], or [accentTextTheme].
+  ///
+  /// See <https://material.io/design/color/> for
+  /// more discussion on how to pick the right colors.
   factory ThemeData({
     Brightness brightness,
     VisualDensity visualDensity,
@@ -269,13 +266,9 @@ class ThemeData with Diagnosticable {
     MaterialBannerThemeData bannerTheme,
     DividerThemeData dividerTheme,
     ButtonBarThemeData buttonBarTheme,
-    BottomNavigationBarThemeData bottomNavigationBarTheme,
-    TimePickerThemeData timePickerTheme,
-    bool fixTextFieldOutlineLabel,
   }) {
-    assert(colorScheme?.brightness == null || brightness == null || colorScheme.brightness == brightness);
-    final Brightness _brightness = brightness ?? colorScheme?.brightness ?? Brightness.light;
-    final bool isDark = _brightness == Brightness.dark;
+    brightness ??= Brightness.light;
+    final bool isDark = brightness == Brightness.dark;
     visualDensity ??= const VisualDensity();
     primarySwatch ??= Colors.blue;
     primaryColor ??= isDark ? Colors.grey[900] : primarySwatch;
@@ -302,7 +295,7 @@ class ThemeData with Diagnosticable {
       cardColor: cardColor,
       backgroundColor: backgroundColor,
       errorColor: errorColor,
-      brightness: _brightness,
+      brightness: brightness,
     );
 
     splashFactory ??= InkSplash.splashFactory;
@@ -311,7 +304,7 @@ class ThemeData with Diagnosticable {
     // Spec doesn't specify a dark theme secondaryHeaderColor, this is a guess.
     secondaryHeaderColor ??= isDark ? Colors.grey[700] : primarySwatch[50];
     textSelectionColor ??= isDark ? accentColor : primarySwatch[200];
-    // TODO(hansmuller): We need a TextFieldTheme to handle this instead, https://github.com/flutter/flutter/issues/56082
+    // TODO(sandrasandeep): change to color provided by Material Design team
     cursorColor = cursorColor ?? const Color.fromRGBO(66, 133, 244, 1.0);
     textSelectionHandleColor ??= isDark ? Colors.tealAccent[400] : primarySwatch[300];
     backgroundColor ??= isDark ? Colors.grey[700] : primarySwatch[200];
@@ -368,7 +361,7 @@ class ThemeData with Diagnosticable {
     cardTheme ??= const CardTheme();
     chipTheme ??= ChipThemeData.fromDefaults(
       secondaryColor: primaryColor,
-      brightness: colorScheme.brightness,
+      brightness: brightness,
       labelStyle: textTheme.bodyText1,
     );
     dialogTheme ??= const DialogTheme();
@@ -381,12 +374,9 @@ class ThemeData with Diagnosticable {
     bannerTheme ??= const MaterialBannerThemeData();
     dividerTheme ??= const DividerThemeData();
     buttonBarTheme ??= const ButtonBarThemeData();
-    bottomNavigationBarTheme ??= const BottomNavigationBarThemeData();
-    timePickerTheme ??= const TimePickerThemeData();
-
-    fixTextFieldOutlineLabel ??= false;
 
     return ThemeData.raw(
+      brightness: brightness,
       visualDensity: visualDensity,
       primaryColor: primaryColor,
       primaryColorBrightness: primaryColorBrightness,
@@ -450,9 +440,6 @@ class ThemeData with Diagnosticable {
       bannerTheme: bannerTheme,
       dividerTheme: dividerTheme,
       buttonBarTheme: buttonBarTheme,
-      bottomNavigationBarTheme: bottomNavigationBarTheme,
-      timePickerTheme: timePickerTheme,
-      fixTextFieldOutlineLabel: fixTextFieldOutlineLabel,
     );
   }
 
@@ -467,6 +454,7 @@ class ThemeData with Diagnosticable {
     // Warning: make sure these properties are in the exact same order as in
     // operator == and in the hashValues method and in the order of fields
     // in this class, and in the lerp() method.
+    @required this.brightness,
     @required this.visualDensity,
     @required this.primaryColor,
     @required this.primaryColorBrightness,
@@ -530,10 +518,8 @@ class ThemeData with Diagnosticable {
     @required this.bannerTheme,
     @required this.dividerTheme,
     @required this.buttonBarTheme,
-    @required this.bottomNavigationBarTheme,
-    @required this.timePickerTheme,
-    @required this.fixTextFieldOutlineLabel,
-  }) : assert(visualDensity != null),
+  }) : assert(brightness != null),
+       assert(visualDensity != null),
        assert(primaryColor != null),
        assert(primaryColorBrightness != null),
        assert(primaryColorLight != null),
@@ -592,10 +578,7 @@ class ThemeData with Diagnosticable {
        assert(popupMenuTheme != null),
        assert(bannerTheme != null),
        assert(dividerTheme != null),
-       assert(buttonBarTheme != null),
-       assert(bottomNavigationBarTheme != null),
-       assert(timePickerTheme != null),
-       assert(fixTextFieldOutlineLabel != null);
+       assert(buttonBarTheme != null);
 
   /// Create a [ThemeData] based on the colors in the given [colorScheme] and
   /// text styles of the optional [textTheme].
@@ -664,7 +647,7 @@ class ThemeData with Diagnosticable {
   /// this theme is localized using text geometry using [ThemeData.localize].
   factory ThemeData.light() => ThemeData(brightness: Brightness.light);
 
-  /// A default dark theme with a teal secondary [ColorScheme] color.
+  /// A default dark theme with a teal accent color.
   ///
   /// This theme does not contain text geometry. Instead, it is expected that
   /// this theme is localized using text geometry using [ThemeData.localize].
@@ -685,12 +668,17 @@ class ThemeData with Diagnosticable {
   // hashValues() and in the raw constructor and in the order of fields in
   // the class and in the lerp() method.
 
-  /// The overall theme brightness.
+  /// The brightness of the overall theme of the application. Used by widgets
+  /// like buttons to determine what color to pick when not using the primary or
+  /// accent color.
   ///
-  /// The default [TextStyle] color for the [textTheme] is black if the
-  /// theme is constructed with [Brightness.light] and white if the
-  /// theme is constructed with [Brightness.dark].
-  Brightness get brightness => colorScheme.brightness;
+  /// When the [Brightness] is dark, the canvas, card, and primary colors are
+  /// all dark. When the [Brightness] is light, the canvas and card colors
+  /// are bright, and the primary color's darkness varies as described by
+  /// primaryColorBrightness. The primaryColor does not contrast well with the
+  /// card and canvas colors when the brightness is dark; when the brightness is
+  /// dark, use Colors.white or the accentColor for a contrasting color.
+  final Brightness brightness;
 
   /// The density value for specifying the compactness of various UI components.
   ///
@@ -941,27 +929,27 @@ class ThemeData with Diagnosticable {
   /// elevation of a surface should be portrayed with an "overlay" in addition
   /// to the shadow. As the elevation of the component increases, the
   /// overlay increases in opacity. [applyElevationOverlayColor] turns the
-  /// application of this overlay on or off for dark themes.
+  /// application of this overlay on or off.
   ///
-  /// If [true] and [brightness] is [Brightness.dark], a
-  /// semi-transparent version of [colorScheme.onSurface] will be
-  /// applied on top of [Material] widgets that have a [colorScheme.surface]
-  /// color. The level of transparency is based on [Material.elevation] as
-  /// per the Material Dark theme specification.
+  /// If [true] a semi-transparent version of [colorScheme.onSurface] will be
+  /// applied on top of the color of [Material] widgets when their [Material.color]
+  /// is [colorScheme.surface]. The level of transparency is based on
+  /// [Material.elevation] as per the Material Dark theme specification.
   ///
   /// If [false] the surface color will be used unmodified.
   ///
-  /// Defaults to [false] in order to maintain backwards compatibility with
+  /// Defaults to [false].
+  ///
+  /// Note: this setting is here to maintain backwards compatibility with
   /// apps that were built before the Material Dark theme specification
   /// was published. New apps should set this to [true] for any themes
   /// where [brightness] is [Brightness.dark].
   ///
   /// See also:
   ///
-  ///  * [Material.elevation], which effects the level of transparency of the
-  ///    overlay color.
-  ///  * [ElevationOverlay.applyOverlay], which is used by [Material] to apply
-  ///    the overlay color to its surface color.
+  ///  * [Material.elevation], which effects how transparent the white overlay is.
+  ///  * [Material.color], the white color overlay will only be applied of the
+  ///    material's color is [colorScheme.surface].
   ///  * <https://material.io/design/color/dark-theme.html>, which specifies how
   ///    the overlay should be applied.
   final bool applyElevationOverlayColor;
@@ -1037,28 +1025,7 @@ class ThemeData with Diagnosticable {
   /// A theme for customizing the appearance and layout of [ButtonBar] widgets.
   final ButtonBarThemeData buttonBarTheme;
 
-  /// A theme for customizing the appearance and layout of [BottomNavigationBar]
-  /// widgets.
-  final BottomNavigationBarThemeData bottomNavigationBarTheme;
-
-  /// A theme for customizing the appearance and layout of time picker widgets.
-  final TimePickerThemeData timePickerTheme;
-
-  /// A temporary flag to allow apps to opt-in to a
-  /// [small fix](https://github.com/flutter/flutter/issues/54028) for the Y
-  /// coordinate of the floating label in a [TextField] [OutlineInputBorder].
-  ///
-  /// Setting this flag to true causes the floating label to be more precisely
-  /// vertically centered relative to the border's outline.
-  ///
-  /// The flag is currently false by default. It will be default true and
-  /// deprecated before the next beta release (1.18), and removed before the next
-  /// stable release (1.19).
-  final bool fixTextFieldOutlineLabel;
-
   /// Creates a copy of this theme but with the given fields replaced with the new values.
-  ///
-  /// The [brightness] value is applied to the [colorScheme].
   ThemeData copyWith({
     Brightness brightness,
     VisualDensity visualDensity,
@@ -1124,12 +1091,10 @@ class ThemeData with Diagnosticable {
     MaterialBannerThemeData bannerTheme,
     DividerThemeData dividerTheme,
     ButtonBarThemeData buttonBarTheme,
-    BottomNavigationBarThemeData bottomNavigationBarTheme,
-    TimePickerThemeData timePickerTheme,
-    bool fixTextFieldOutlineLabel,
   }) {
     cupertinoOverrideTheme = cupertinoOverrideTheme?.noDefault();
     return ThemeData.raw(
+      brightness: brightness ?? this.brightness,
       visualDensity: visualDensity ?? this.visualDensity,
       primaryColor: primaryColor ?? this.primaryColor,
       primaryColorBrightness: primaryColorBrightness ?? this.primaryColorBrightness,
@@ -1181,7 +1146,7 @@ class ThemeData with Diagnosticable {
       pageTransitionsTheme: pageTransitionsTheme ?? this.pageTransitionsTheme,
       appBarTheme: appBarTheme ?? this.appBarTheme,
       bottomAppBarTheme: bottomAppBarTheme ?? this.bottomAppBarTheme,
-      colorScheme: (colorScheme ?? this.colorScheme).copyWith(brightness: brightness),
+      colorScheme: colorScheme ?? this.colorScheme,
       dialogTheme: dialogTheme ?? this.dialogTheme,
       floatingActionButtonTheme: floatingActionButtonTheme ?? this.floatingActionButtonTheme,
       navigationRailTheme: navigationRailTheme ?? this.navigationRailTheme,
@@ -1193,9 +1158,6 @@ class ThemeData with Diagnosticable {
       bannerTheme: bannerTheme ?? this.bannerTheme,
       dividerTheme: dividerTheme ?? this.dividerTheme,
       buttonBarTheme: buttonBarTheme ?? this.buttonBarTheme,
-      bottomNavigationBarTheme: bottomNavigationBarTheme ?? this.bottomNavigationBarTheme,
-      timePickerTheme: timePickerTheme ?? this.timePickerTheme,
-      fixTextFieldOutlineLabel: fixTextFieldOutlineLabel ?? this.fixTextFieldOutlineLabel,
     );
   }
 
@@ -1277,6 +1239,7 @@ class ThemeData with Diagnosticable {
     // hashValues() and in the raw constructor and in the order of fields in
     // the class and in the lerp() method.
     return ThemeData.raw(
+      brightness: t < 0.5 ? a.brightness : b.brightness,
       visualDensity: VisualDensity.lerp(a.visualDensity, b.visualDensity, t),
       primaryColor: Color.lerp(a.primaryColor, b.primaryColor, t),
       primaryColorBrightness: t < 0.5 ? a.primaryColorBrightness : b.primaryColorBrightness,
@@ -1340,9 +1303,6 @@ class ThemeData with Diagnosticable {
       bannerTheme: MaterialBannerThemeData.lerp(a.bannerTheme, b.bannerTheme, t),
       dividerTheme: DividerThemeData.lerp(a.dividerTheme, b.dividerTheme, t),
       buttonBarTheme: ButtonBarThemeData.lerp(a.buttonBarTheme, b.buttonBarTheme, t),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData.lerp(a.bottomNavigationBarTheme, b.bottomNavigationBarTheme, t),
-      timePickerTheme: TimePickerThemeData.lerp(a.timePickerTheme, b.timePickerTheme, t),
-      fixTextFieldOutlineLabel: t < 0.5 ? a.fixTextFieldOutlineLabel : b.fixTextFieldOutlineLabel,
     );
   }
 
@@ -1354,6 +1314,7 @@ class ThemeData with Diagnosticable {
     // hashValues() and in the raw constructor and in the order of fields in
     // the class and in the lerp() method.
     return other is ThemeData
+        && other.brightness == brightness
         && other.visualDensity == visualDensity
         && other.primaryColor == primaryColor
         && other.primaryColorBrightness == primaryColorBrightness
@@ -1414,10 +1375,7 @@ class ThemeData with Diagnosticable {
         && other.popupMenuTheme == popupMenuTheme
         && other.bannerTheme == bannerTheme
         && other.dividerTheme == dividerTheme
-        && other.buttonBarTheme == buttonBarTheme
-        && other.bottomNavigationBarTheme == bottomNavigationBarTheme
-        && other.timePickerTheme == timePickerTheme
-        && other.fixTextFieldOutlineLabel == fixTextFieldOutlineLabel;
+        && other.buttonBarTheme == buttonBarTheme;
   }
 
   @override
@@ -1426,6 +1384,7 @@ class ThemeData with Diagnosticable {
     // are in the exact same order as in operator == and in the raw constructor
     // and in the order of fields in the class and in the lerp() method.
     final List<Object> values = <Object>[
+      brightness,
       visualDensity,
       primaryColor,
       primaryColorBrightness,
@@ -1489,9 +1448,6 @@ class ThemeData with Diagnosticable {
       bannerTheme,
       dividerTheme,
       buttonBarTheme,
-      bottomNavigationBarTheme,
-      timePickerTheme,
-      fixTextFieldOutlineLabel,
     ];
     return hashList(values);
   }
@@ -1560,8 +1516,6 @@ class ThemeData with Diagnosticable {
     properties.add(DiagnosticsProperty<MaterialBannerThemeData>('bannerTheme', bannerTheme, defaultValue: defaultData.bannerTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<DividerThemeData>('dividerTheme', dividerTheme, defaultValue: defaultData.dividerTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<ButtonBarThemeData>('buttonBarTheme', buttonBarTheme, defaultValue: defaultData.buttonBarTheme, level: DiagnosticLevel.debug));
-    properties.add(DiagnosticsProperty<TimePickerThemeData>('timePickerTheme', timePickerTheme, defaultValue: defaultData.timePickerTheme, level: DiagnosticLevel.debug));
-    properties.add(DiagnosticsProperty<BottomNavigationBarThemeData>('bottomNavigationBarTheme', bottomNavigationBarTheme, defaultValue: defaultData.bottomNavigationBarTheme, level: DiagnosticLevel.debug));
   }
 }
 
@@ -1682,9 +1636,8 @@ class MaterialBasedCupertinoThemeData extends CupertinoThemeData {
   }
 }
 
-@immutable
 class _IdentityThemeDataCacheKey {
-  const _IdentityThemeDataCacheKey(this.baseTheme, this.localTextGeometry);
+  _IdentityThemeDataCacheKey(this.baseTheme, this.localTextGeometry);
 
   final ThemeData baseTheme;
   final TextTheme localTextGeometry;
@@ -1760,7 +1713,6 @@ class _FifoCache<K, V> {
 ///  * [ThemeData.visualDensity], where this property is used to specify the base
 ///    horizontal density of Material components.
 ///  * [Material design guidance on density](https://material.io/design/layout/applying-density.html).
-@immutable
 class VisualDensity with Diagnosticable {
   /// A const constructor for [VisualDensity].
   ///

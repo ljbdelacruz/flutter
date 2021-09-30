@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -13,7 +11,7 @@ import 'package:flutter/gestures.dart';
 
 void main() {
   group('Horizontal', () {
-    testWidgets('gets local coordinates', (WidgetTester tester) async {
+    testWidgets('gets local corrdinates', (WidgetTester tester) async {
       int dragCancelCount = 0;
       final List<DragDownDetails> downDetails = <DragDownDetails>[];
       final List<DragEndDetails> endDetails = <DragEndDetails>[];
@@ -264,7 +262,7 @@ void main() {
       updateDetails.clear();
     });
 
-    testWidgets('kTouchSlop is evaluated in the global coordinate space when rotated 45 degrees', (WidgetTester tester) async {
+    testWidgets('kTouchSlop is evaluated in the global coordinate space when roateted 45 degrees', (WidgetTester tester) async {
       int dragCancelCount = 0;
       final List<DragDownDetails> downDetails = <DragDownDetails>[];
       final List<DragEndDetails> endDetails = <DragEndDetails>[];
@@ -341,7 +339,7 @@ void main() {
   });
 
   group('Vertical', () {
-    testWidgets('gets local coordinates', (WidgetTester tester) async {
+    testWidgets('gets local corrdinates', (WidgetTester tester) async {
       int dragCancelCount = 0;
       final List<DragDownDetails> downDetails = <DragDownDetails>[];
       final List<DragEndDetails> endDetails = <DragEndDetails>[];
@@ -592,7 +590,7 @@ void main() {
       updateDetails.clear();
     });
 
-    testWidgets('kTouchSlop is evaluated in the global coordinate space when rotated 45 degrees', (WidgetTester tester) async {
+    testWidgets('kTouchSlop is evaluated in the global coordinate space when roateted 45 degrees', (WidgetTester tester) async {
       int dragCancelCount = 0;
       final List<DragDownDetails> downDetails = <DragDownDetails>[];
       final List<DragEndDetails> endDetails = <DragEndDetails>[];

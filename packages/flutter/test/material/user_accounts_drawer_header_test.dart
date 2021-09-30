@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -480,8 +478,6 @@ void main() {
             TestSemantics(
               children: <TestSemantics>[
                 TestSemantics(
-                  children: <TestSemantics>[
-                    TestSemantics(
                   flags: <SemanticsFlag>[SemanticsFlag.scopesRoute],
                   children: <TestSemantics>[
                     TestSemantics(
@@ -509,8 +505,6 @@ void main() {
                         ),
                       ],
                     ),
-                  ],
-                ),
                   ],
                 ),
               ],
@@ -562,27 +556,23 @@ void main() {
             TestSemantics(
               children: <TestSemantics>[
                 TestSemantics(
+                  flags: <SemanticsFlag>[SemanticsFlag.scopesRoute],
                   children: <TestSemantics>[
                     TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.scopesRoute],
+                      label: 'Signed in',
+                      textDirection: TextDirection.ltr,
                       children: <TestSemantics>[
                         TestSemantics(
-                          label: 'Signed in',
+                          label: r'B',
                           textDirection: TextDirection.ltr,
-                          children: <TestSemantics>[
-                            TestSemantics(
-                              label: r'B',
-                              textDirection: TextDirection.ltr,
-                            ),
-                            TestSemantics(
-                              label: r'C',
-                              textDirection: TextDirection.ltr,
-                            ),
-                            TestSemantics(
-                              label: r'D',
-                              textDirection: TextDirection.ltr,
-                            ),
-                          ],
+                        ),
+                        TestSemantics(
+                          label: r'C',
+                          textDirection: TextDirection.ltr,
+                        ),
+                        TestSemantics(
+                          label: r'D',
+                          textDirection: TextDirection.ltr,
                         ),
                       ],
                     ),

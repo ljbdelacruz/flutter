@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -252,7 +251,7 @@ void main() {
     expect(box, isNot(paints..circle()));
 
     await gesture.up();
-  });
+  }, skip: isBrowser);
 
   testWidgets('The InkWell widget renders an SelectAction or ActivateAction-induced ink ripple', (WidgetTester tester) async {
     const Color highlightColor = Color(0xAAFF0000);
@@ -260,11 +259,11 @@ void main() {
     final BorderRadius borderRadius = BorderRadius.circular(6.0);
 
     final FocusNode focusNode = FocusNode(debugLabel: 'Test Node');
-    Future<void> buildTest(Intent intent) async {
+    Future<void> buildTest(LocalKey actionKey) async {
       return await tester.pumpWidget(
         Shortcuts(
           shortcuts: <LogicalKeySet, Intent>{
-            LogicalKeySet(LogicalKeyboardKey.space): intent,
+            LogicalKeySet(LogicalKeyboardKey.space): Intent(actionKey),
           },
           child: Directionality(
             textDirection: TextDirection.ltr,
@@ -290,7 +289,7 @@ void main() {
       );
     }
 
-    await buildTest(const ActivateIntent());
+    await buildTest(ActivateAction.key);
     focusNode.requestFocus();
     await tester.pumpAndSettle();
 
@@ -323,7 +322,7 @@ void main() {
         );
     }
 
-    await buildTest(const ActivateIntent());
+    await buildTest(ActivateAction.key);
     await tester.pumpAndSettle();
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pump();

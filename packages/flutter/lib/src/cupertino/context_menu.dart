@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart' show kMinFlingVelocity, kLongPressTimeout;
@@ -380,8 +378,8 @@ class _CupertinoContextMenuState extends State<CupertinoContextMenu> with Ticker
     // decoy will pop on top of the AppBar if the child is partially behind it,
     // such as a top item in a partially scrolled view. However, if we don't use
     // an overlay, then the decoy will appear behind its neighboring widget when
-    // it expands. This may be solvable by adding a widget to Scaffold that's
-    // underneath the AppBar.
+    // it expands. This may be solveable by adding a widget to Scaffold that's
+    // undernearth the AppBar.
     _lastOverlayEntry = OverlayEntry(
       opaque: false,
       builder: (BuildContext context) {
@@ -1038,7 +1036,7 @@ class _ContextMenuRouteStaticState extends State<_ContextMenuRouteStatic> with T
         ),
       ),
     );
-    const SizedBox spacer = SizedBox(
+    final Container spacer = Container(
       width: _kPadding,
       height: _kPadding,
     );
@@ -1093,7 +1091,7 @@ class _ContextMenuRouteStaticState extends State<_ContextMenuRouteStatic> with T
     );
   }
 
-  // Build the animation for the overall draggable dismissible content.
+  // Build the animation for the overall draggable dismissable content.
   Widget _buildAnimation(BuildContext context, Widget child) {
     return Transform.translate(
       offset: _moveAnimation.value,

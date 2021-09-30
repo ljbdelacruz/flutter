@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math show pi;
 
 import 'package:flutter/material.dart';
@@ -11,10 +9,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _UpdateCountedPhysicalModel extends PhysicalModel {
+  const _UpdateCountedPhysicalModel({Clip clipBehavior = Clip.none})
+    : super(clipBehavior: clipBehavior, color: Colors.red);
+}
+
+class _UpdateCountedPhysicalShape extends PhysicalShape {
+  const _UpdateCountedPhysicalShape({Clip clipBehavior = Clip.none})
+      : super(clipBehavior: clipBehavior, color: Colors.red, clipper: const ShapeBorderClipper(shape: CircleBorder()));
+}
+
 void main() {
   testWidgets('PhysicalModel updates clipBehavior in updateRenderObject', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: PhysicalModel(color: Colors.red)),
+      const MaterialApp(home: _UpdateCountedPhysicalModel()),
     );
 
     final RenderPhysicalModel renderPhysicalModel = tester.allRenderObjects.whereType<RenderPhysicalModel>().first;
@@ -22,7 +30,7 @@ void main() {
     expect(renderPhysicalModel.clipBehavior, equals(Clip.none));
 
     await tester.pumpWidget(
-      const MaterialApp(home: PhysicalModel(clipBehavior: Clip.antiAlias, color: Colors.red)),
+      const MaterialApp(home: _UpdateCountedPhysicalModel(clipBehavior: Clip.antiAlias)),
     );
 
     expect(renderPhysicalModel.clipBehavior, equals(Clip.antiAlias));
@@ -30,7 +38,7 @@ void main() {
 
   testWidgets('PhysicalShape updates clipBehavior in updateRenderObject', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: PhysicalShape(color: Colors.red, clipper: ShapeBorderClipper(shape: CircleBorder()))),
+      const MaterialApp(home: _UpdateCountedPhysicalShape()),
     );
 
     final RenderPhysicalShape renderPhysicalShape = tester.allRenderObjects.whereType<RenderPhysicalShape>().first;
@@ -38,7 +46,7 @@ void main() {
     expect(renderPhysicalShape.clipBehavior, equals(Clip.none));
 
     await tester.pumpWidget(
-      const MaterialApp(home: PhysicalShape(clipBehavior: Clip.antiAlias, color: Colors.red, clipper: ShapeBorderClipper(shape: CircleBorder()))),
+      const MaterialApp(home: _UpdateCountedPhysicalShape(clipBehavior: Clip.antiAlias)),
     );
 
     expect(renderPhysicalShape.clipBehavior, equals(Clip.antiAlias));
@@ -47,13 +55,17 @@ void main() {
   testWidgets('PhysicalModel - creates a physical model layer when it needs compositing', (WidgetTester tester) async {
     debugDisableShadows = false;
     await tester.pumpWidget(
-      MaterialApp(
-        home: PhysicalModel(
-          shape: BoxShape.rectangle,
-          color: Colors.grey,
-          shadowColor: Colors.red,
-          elevation: 1.0,
-          child: Material(child: TextField(controller: TextEditingController())),
+      MediaQuery(
+        data: const MediaQueryData(devicePixelRatio: 1.0),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: PhysicalModel(
+            shape: BoxShape.rectangle,
+            color: Colors.grey,
+            shadowColor: Colors.red,
+            elevation: 1.0,
+            child: Material(child: TextField(controller: TextEditingController())),
+          ),
         ),
       ),
     );

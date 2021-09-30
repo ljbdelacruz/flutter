@@ -1,5 +1,4 @@
 {
-  "tabSemanticsLabel": "$tabIndex. kartica od $tabCount",
   "datePickerHourSemanticsLabelFew": "$hour sata",
   "datePickerMinuteSemanticsLabelFew": "$minute minuta",
   "timerPickerHourLabelFew": "sata",
@@ -24,6 +23,5 @@
   "cutButtonLabel": "Iseci",
   "copyButtonLabel": "Kopiraj",
   "pasteButtonLabel": "Nalepi",
-  "selectAllButtonLabel": "Izaberi sve",
-  "modalBarrierDismissLabel": "Odbaci"
+  "selectAllButtonLabel": "Izaberi sve"
 }

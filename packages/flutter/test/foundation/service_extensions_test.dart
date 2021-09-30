@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -18,9 +16,9 @@ import 'package:flutter/widgets.dart';
 import '../flutter_test_alternative.dart';
 
 class TestServiceExtensionsBinding extends BindingBase
-  with SchedulerBinding,
-       ServicesBinding,
+  with ServicesBinding,
        GestureBinding,
+       SchedulerBinding,
        PaintingBinding,
        SemanticsBinding,
        RendererBinding,
@@ -167,8 +165,9 @@ void main() {
 
     // The following service extensions are disabled in web:
     // 1. exit
-    // 2. showPerformanceOverlay
-    const int disabledExtensions = kIsWeb ? 2 : 0;
+    // 2. saveCompilationTrace
+    // 3. showPerformanceOverlay
+    const int disabledExtensions = kIsWeb ? 3 : 0;
     // If you add a service extension... TEST IT! :-)
     // ...then increment this number.
     expect(binding.extensions.length, 28 + widgetInspectorExtensionCount - disabledExtensions);
@@ -710,18 +709,19 @@ void main() {
     expect(binding.frameScheduled, isFalse);
   });
 
-  test('Service extensions - brightnessOverride', () async {
+  test('Service extensions - saveCompilationTrace', () async {
     Map<String, dynamic> result;
-    result = await binding.testExtension('brightnessOverride', <String, String>{});
-    final String brightnessValue = result['value'] as String;
-
-    expect(brightnessValue, 'Brightness.light');
-  });
+    result = await binding.testExtension('saveCompilationTrace', <String, String>{});
+    final String trace = String.fromCharCodes((result['value'] as List<dynamic>).cast<int>());
+    expect(trace, contains('dart:core,Object,Object.\n'));
+    expect(trace, contains('package:test_api/test_api.dart,::,test\n'));
+    expect(trace, contains('service_extensions_test.dart,::,main\n'));
+  }, skip: isBrowser);
 
   test('Service extensions - fastReassemble', () async {
     Map<String, dynamic> result;
     result = await binding.testExtension('fastReassemble', <String, String>{'class': 'Foo'});
 
     expect(result, containsPair('Success', 'true'));
-  });
+  }, skip: isBrowser);
 }

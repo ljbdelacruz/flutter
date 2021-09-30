@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
+// TODO(shihaohong): remove ignoring deprecated member use analysis
+// when Scaffold.shouldSnackBarIgnoreFABRect parameter is removed.
+// ignore_for_file: deprecated_member_use_from_same_package
 
 import 'dart:async';
 import 'dart:collection';
@@ -80,7 +82,6 @@ class ScaffoldPrelayoutGeometry {
     @required this.contentTop,
     @required this.floatingActionButtonSize,
     @required this.minInsets,
-    @required this.minViewPadding,
     @required this.scaffoldSize,
     @required this.snackBarSize,
     @required this.textDirection,
@@ -134,16 +135,6 @@ class ScaffoldPrelayoutGeometry {
   /// If [Scaffold.resizeToAvoidBottomInset] is set to false, [minInsets.bottom]
   /// will be 0.0.
   final EdgeInsets minInsets;
-
-  /// The minimum padding to inset interactive elements to be within a safe,
-  /// un-obscured space.
-  ///
-  /// This value reflects the [MediaQuery.viewPadding] of the [Scaffold]'s
-  /// [BuildContext] when [Scaffold.resizeToAvoidBottomInset] is false or and
-  /// the [MediaQuery.viewInsets] > 0.0. This helps distinguish between
-  /// different types of obstructions on the screen, such as software keyboards
-  /// and physical device notches.
-  final EdgeInsets minViewPadding;
 
   /// The [Size] of the whole [Scaffold].
   ///
@@ -400,7 +391,6 @@ class _BodyBuilder extends StatelessWidget {
 class _ScaffoldLayout extends MultiChildLayoutDelegate {
   _ScaffoldLayout({
     @required this.minInsets,
-    @required this.minViewPadding,
     @required this.textDirection,
     @required this.geometryNotifier,
     // for floating action button
@@ -422,7 +412,6 @@ class _ScaffoldLayout extends MultiChildLayoutDelegate {
   final bool extendBody;
   final bool extendBodyBehindAppBar;
   final EdgeInsets minInsets;
-  final EdgeInsets minViewPadding;
   final TextDirection textDirection;
   final _ScaffoldGeometryNotifier geometryNotifier;
 
@@ -549,7 +538,6 @@ class _ScaffoldLayout extends MultiChildLayoutDelegate {
         scaffoldSize: size,
         snackBarSize: snackBarSize,
         textDirection: textDirection,
-        minViewPadding: minViewPadding,
       );
       final Offset currentFabOffset = currentFloatingActionButtonLocation.getOffset(currentGeometry);
       final Offset previousFabOffset = previousFloatingActionButtonLocation.getOffset(currentGeometry);
@@ -568,10 +556,15 @@ class _ScaffoldLayout extends MultiChildLayoutDelegate {
       }
 
       double snackBarYOffsetBase;
-      if (floatingActionButtonRect.size != Size.zero && isSnackBarFloating) {
-        snackBarYOffsetBase = floatingActionButtonRect.top;
+      if (Scaffold.shouldSnackBarIgnoreFABRect) {
+        if (floatingActionButtonRect.size != Size.zero && isSnackBarFloating)
+          snackBarYOffsetBase = floatingActionButtonRect.top;
+        else
+          snackBarYOffsetBase = contentBottom;
       } else {
-        snackBarYOffsetBase = contentBottom;
+        snackBarYOffsetBase = floatingActionButtonRect != null && isSnackBarFloating
+          ? floatingActionButtonRect.top
+          : contentBottom;
       }
 
       positionChild(_ScaffoldSlot.snackBar, Offset(0.0, snackBarYOffsetBase - snackBarSize.height));
@@ -1034,8 +1027,9 @@ class Scaffold extends StatefulWidget {
   /// instead of only extending to the top of the [bottomNavigationBar]
   /// or the [persistentFooterButtons].
   ///
-  /// If true, a [MediaQuery] widget whose bottom padding matches the height
-  /// of the [bottomNavigationBar] will be added above the scaffold's [body].
+  /// If true, a [MediaQuery] widget whose bottom padding matches the
+  /// the height of the [bottomNavigationBar] will be added above the
+  /// scaffold's [body].
   ///
   /// This property is often useful when the [bottomNavigationBar] has
   /// a non-rectangular shape, like [CircularNotchedRectangle], which
@@ -1339,6 +1333,17 @@ class Scaffold extends StatefulWidget {
   ///
   /// By default, the drag gesture is enabled.
   final bool endDrawerEnableOpenDragGesture;
+
+  /// This flag is deprecated and fixes and issue with incorrect clipping
+  /// and positioning of the [SnackBar] set to [SnackBarBehavior.floating].
+  @Deprecated(
+    'This property controls whether to clip and position the snackbar as '
+    'if there is always a floating action button, even if one is not present. '
+    'It exists to provide backwards compatibility to ease migrations, and will '
+    'eventually be removed. '
+    'This feature was deprecated after v1.15.3.'
+  )
+  static bool shouldSnackBarIgnoreFABRect = false;
 
   /// The state from the closest instance of this class that encloses the given context.
   ///
@@ -2105,6 +2110,7 @@ class ScaffoldState extends State<Scaffold> with TickerProviderStateMixin {
 
   // Backwards compatibility for deprecated resizeToAvoidBottomPadding property
   bool get _resizeToAvoidBottomInset {
+    // ignore: deprecated_member_use_from_same_package
     return widget.resizeToAvoidBottomInset ?? widget.resizeToAvoidBottomPadding ?? true;
   }
 
@@ -2510,12 +2516,6 @@ class ScaffoldState extends State<Scaffold> with TickerProviderStateMixin {
       bottom: _resizeToAvoidBottomInset ? mediaQuery.viewInsets.bottom : 0.0,
     );
 
-    // The minimum viewPadding for interactive elements positioned by the
-    // Scaffold to keep within safe interactive areas.
-    final EdgeInsets minViewPadding = mediaQuery.viewPadding.copyWith(
-      bottom: _resizeToAvoidBottomInset &&  mediaQuery.viewInsets.bottom != 0.0 ? 0.0 : null,
-    );
-
     // extendBody locked when keyboard is open
     final bool _extendBody = minInsets.bottom <= 0 && widget.extendBody;
 
@@ -2533,7 +2533,6 @@ class ScaffoldState extends State<Scaffold> with TickerProviderStateMixin {
                 extendBody: _extendBody,
                 extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
                 minInsets: minInsets,
-                minViewPadding: minViewPadding,
                 currentFloatingActionButtonLocation: _floatingActionButtonLocation,
                 floatingActionButtonMoveAnimationProgress: _floatingActionButtonMoveController.value,
                 floatingActionButtonMotionAnimator: _floatingActionButtonAnimator,
@@ -2568,8 +2567,7 @@ class ScaffoldFeatureController<T extends Widget, U> {
   final StateSetter setState;
 }
 
-// TODO(guidezpl): Look into making this public. A copy of this class is in
-//  bottom_sheet.dart, for now, https://github.com/flutter/flutter/issues/51627
+// TODO(guidezpl): Look into making this public. A copy of this class is in bottom_sheet.dart, for now.
 /// A curve that progresses linearly until a specified [startingPoint], at which
 /// point [curve] will begin. Unlike [Interval], [curve] will not start at zero,
 /// but will use [startingPoint] as the Y position.

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/rendering.dart';
 
 import 'animated_size.dart';
@@ -218,7 +216,7 @@ class AnimatedCrossFade extends StatefulWidget {
   /// [AnimatedCrossFadeBuilder].
   static Widget defaultLayoutBuilder(Widget topChild, Key topChildKey, Widget bottomChild, Key bottomChildKey) {
     return Stack(
-      clipBehavior: Clip.none,
+      overflow: Overflow.visible,
       children: <Widget>[
         Positioned(
           key: bottomChildKey,

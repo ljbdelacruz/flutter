@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -340,9 +338,9 @@ void main() {
     await tester.pumpWidget(Center(
       child: Column(
         key: flexKey,
-        children: const <Widget>[
-          SizedBox(width: 100.0, height: 100.0),
-          SizedBox(width: 100.0, height: 150.0),
+        children: <Widget>[
+          Container(width: 100.0, height: 100.0),
+          Container(width: 100.0, height: 150.0),
         ],
       ),
     ));
@@ -355,9 +353,9 @@ void main() {
       child: Column(
         key: flexKey,
         mainAxisSize: MainAxisSize.min,
-        children: const <Widget>[
-          SizedBox(width: 100.0, height: 100.0),
-          SizedBox(width: 100.0, height: 150.0),
+        children: <Widget>[
+          Container(width: 100.0, height: 100.0),
+          Container(width: 100.0, height: 150.0),
         ],
       ),
     ));
@@ -731,9 +729,9 @@ void main() {
       child: Column(
         key: flexKey,
         verticalDirection: VerticalDirection.up,
-        children: const <Widget>[
-          SizedBox(width: 100.0, height: 100.0),
-          SizedBox(width: 100.0, height: 150.0),
+        children: <Widget>[
+          Container(width: 100.0, height: 100.0),
+          Container(width: 100.0, height: 150.0),
         ],
       ),
     ));
@@ -747,9 +745,9 @@ void main() {
         key: flexKey,
         mainAxisSize: MainAxisSize.min,
         verticalDirection: VerticalDirection.up,
-        children: const <Widget>[
-          SizedBox(width: 100.0, height: 100.0),
-          SizedBox(width: 100.0, height: 150.0),
+        children: <Widget>[
+          Container(width: 100.0, height: 100.0),
+          Container(width: 100.0, height: 150.0),
         ],
       ),
     ));

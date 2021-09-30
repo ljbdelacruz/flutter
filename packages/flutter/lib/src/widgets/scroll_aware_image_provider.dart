@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/painting.dart';
@@ -14,7 +12,7 @@ import 'framework.dart';
 import 'scrollable.dart';
 
 /// An [ImageProvider] that makes use of
-/// [Scrollable.recommendDeferredLoadingForContext] to avoid loading images when
+/// [Scollable.recommendDeferredLoadingForContext] to avoid loading images when
 /// rapidly scrolling.
 ///
 /// This provider assumes that its wrapped [imageProvider] correctly uses the
@@ -103,7 +101,7 @@ class ScrollAwareImageProvider<T> extends ImageProvider<T> {
         });
         return;
     }
-    // We are in the tree, we're not scrolling too fast, the cache doesn't
+    // We are in the tree, we're not scrolling too fast, the cache doens't
     // have our image, and no one has otherwise completed the stream.  Go.
     imageProvider.resolveStreamForKey(configuration, stream, key, handleError);
   }

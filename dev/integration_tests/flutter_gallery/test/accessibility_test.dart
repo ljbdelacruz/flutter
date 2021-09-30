@@ -50,7 +50,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: ChipDemo()));
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       handle.dispose();
-    }, skip: true); // https://github.com/flutter/flutter/issues/42455
+    }, skip: true); // TODO(gspencergoog): Stop skipping when issue is fixed. https://github.com/flutter/flutter/issues/42455
 
     testWidgets('data_table_demo', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -290,7 +290,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: DataTableDemo()));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       handle.dispose();
-    }, skip: true); // DataTables are not accessible, https://github.com/flutter/flutter/issues/10830
+    }, skip: true);
 
     testWidgets('date_and_time_picker_demo', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -318,7 +318,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: ElevationDemo()));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       handle.dispose();
-    });
+    }, skip: true);
 
     testWidgets('expansion_panels_demo', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -332,7 +332,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: GridListDemo()));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       handle.dispose();
-    });
+    }, skip: true);
 
     testWidgets('icons_demo', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -409,7 +409,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: ScrollableTabsDemo()));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       handle.dispose();
-    });
+    }, skip: true);
 
     testWidgets('search_demo', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -423,7 +423,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: SelectionControlsDemo()));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       handle.dispose();
-    });
+    }, skip: true);
 
     testWidgets('slider_demo', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -479,13 +479,13 @@ void main() {
     final List<ThemeData> themes = <ThemeData>[
       kLightGalleryTheme,
       ThemeData.light(),
-      ThemeData.dark(),
+      // TODO(hansmuller): add kDarkGalleryTheme, ThemeData.dark(), see #22044
     ];
 
     const List<String> themeNames = <String>[
       'kLightGalleryTheme',
       'ThemeData.light()',
-      'ThemeData.dark()',
+      // TODO(hansmuller): add 'kDarkGalleryTheme', 'ThemeData.dark()', see #22044
     ];
 
     for (int themeIndex = 0; themeIndex < themes.length; themeIndex += 1) {
@@ -506,7 +506,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: BottomAppBarDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      });
+      }, skip: theme == ThemeData.light());
 
       testWidgets('bottom_navigation_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -538,7 +538,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: ChipDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      });
+      }, skip: true); // https://github.com/flutter/flutter/issues/21647
 
       testWidgets('data_table_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -546,7 +546,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: DataTableDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      });
+      }, skip: true); // https://github.com/flutter/flutter/issues/21647
 
       testWidgets('date_and_time_picker_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -554,7 +554,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: DateAndTimePickerDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      });
+      }, skip: true); // https://github.com/flutter/flutter/issues/21647
 
       testWidgets('dialog_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -562,9 +562,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: DialogDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      }, skip: theme == ThemeData.dark()); // Raised Button does not follow
-      // theme. https://github.com/flutter/flutter/issues/16488,
-      // https://github.com/flutter/flutter/issues/19623
+      });
 
       testWidgets('drawer_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -604,7 +602,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: IconsDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      });
+      }, skip: true); // https://github.com/flutter/flutter/issues/21647
 
       testWidgets('leave_behind_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -633,14 +631,10 @@ void main() {
       testWidgets('modal_bottom_sheet_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
         final SemanticsHandle handle = tester.ensureSemantics();
-        await tester.pumpWidget(
-          MaterialApp(theme: theme, home: ModalBottomSheetDemo())
-        );
+        await tester.pumpWidget(MaterialApp(theme: theme, home: ModalBottomSheetDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      }, skip: theme == ThemeData.dark()); // Raised Button does not follow
-      // theme. https://github.com/flutter/flutter/issues/16488,
-      // https://github.com/flutter/flutter/issues/19623
+      });
 
       testWidgets('overscroll_demo', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -661,14 +655,10 @@ void main() {
       testWidgets('persistent_bottom_sheet_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
         final SemanticsHandle handle = tester.ensureSemantics();
-        await tester.pumpWidget(
-          MaterialApp(theme: theme, home: PersistentBottomSheetDemo())
-        );
+        await tester.pumpWidget(MaterialApp(theme: theme, home: PersistentBottomSheetDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      }, skip: theme == ThemeData.dark()); // Raised Button does not follow
-      // theme. https://github.com/flutter/flutter/issues/16488,
-      // https://github.com/flutter/flutter/issues/19623
+      });
 
       testWidgets('progress_indicator_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -700,7 +690,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(theme: theme, home: SearchDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      });
+      }, skip: true); // https://github.com/flutter/flutter/issues/21651
 
       testWidgets('selection_controls_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
@@ -721,14 +711,10 @@ void main() {
       testWidgets('snack_bar_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));
         final SemanticsHandle handle = tester.ensureSemantics();
-        await tester.pumpWidget(
-          MaterialApp(theme: theme, home: const SnackBarDemo())
-        );
+        await tester.pumpWidget(MaterialApp(theme: theme, home: const SnackBarDemo()));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         handle.dispose();
-      }, skip: theme == ThemeData.dark()); // Raised Button does not follow
-      // theme. https://github.com/flutter/flutter/issues/16488,
-      // https://github.com/flutter/flutter/issues/19623
+      });
 
       testWidgets('tabs_demo $themeName', (WidgetTester tester) async {
         tester.binding.addTime(const Duration(seconds: 3));

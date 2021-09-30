@@ -198,9 +198,9 @@ abstract class ProcessUtils {
   /// When [throwOnError] is `true`, if the child process finishes with a non-zero
   /// exit code, a [ProcessException] is thrown.
   ///
-  /// If [throwOnError] is `true`, and [allowedFailures] is supplied,
+  /// If [throwOnError] is `true`, and [whiteListFailures] is supplied,
   /// a [ProcessException] is only thrown on a non-zero exit code if
-  /// [allowedFailures] returns false when passed the exit code.
+  /// [whiteListFailures] returns false when passed the exit code.
   ///
   /// When [workingDirectory] is set, it is the working directory of the child
   /// process.
@@ -219,7 +219,7 @@ abstract class ProcessUtils {
   Future<RunResult> run(
     List<String> cmd, {
     bool throwOnError = false,
-    RunResultChecker allowedFailures,
+    RunResultChecker whiteListFailures,
     String workingDirectory,
     bool allowReentrantFlutter = false,
     Map<String, String> environment,
@@ -231,12 +231,11 @@ abstract class ProcessUtils {
   RunResult runSync(
     List<String> cmd, {
     bool throwOnError = false,
-    RunResultChecker allowedFailures,
+    RunResultChecker whiteListFailures,
     bool hideStdout = false,
     String workingDirectory,
     Map<String, String> environment,
     bool allowReentrantFlutter = false,
-    Encoding encoding = systemEncoding,
   });
 
   /// This runs the command in the background from the specified working
@@ -293,7 +292,7 @@ class _DefaultProcessUtils implements ProcessUtils {
   Future<RunResult> run(
     List<String> cmd, {
     bool throwOnError = false,
-    RunResultChecker allowedFailures,
+    RunResultChecker whiteListFailures,
     String workingDirectory,
     bool allowReentrantFlutter = false,
     Map<String, String> environment,
@@ -319,7 +318,7 @@ class _DefaultProcessUtils implements ProcessUtils {
       final RunResult runResult = RunResult(results, cmd);
       _logger.printTrace(runResult.toString());
       if (throwOnError && runResult.exitCode != 0 &&
-          (allowedFailures == null || !allowedFailures(runResult.exitCode))) {
+          (whiteListFailures == null || !whiteListFailures(runResult.exitCode))) {
         runResult.throwException('Process exited abnormally:\n$runResult');
       }
       return runResult;
@@ -383,7 +382,7 @@ class _DefaultProcessUtils implements ProcessUtils {
       if (exitCode != null) {
         _logger.printTrace(runResult.toString());
         if (throwOnError && runResult.exitCode != 0 &&
-            (allowedFailures == null || !allowedFailures(exitCode))) {
+            (whiteListFailures == null || !whiteListFailures(exitCode))) {
           runResult.throwException('Process exited abnormally:\n$runResult');
         }
         return runResult;
@@ -408,28 +407,25 @@ class _DefaultProcessUtils implements ProcessUtils {
   RunResult runSync(
     List<String> cmd, {
     bool throwOnError = false,
-    RunResultChecker allowedFailures,
+    RunResultChecker whiteListFailures,
     bool hideStdout = false,
     String workingDirectory,
     Map<String, String> environment,
     bool allowReentrantFlutter = false,
-    Encoding encoding = systemEncoding,
   }) {
     _traceCommand(cmd, workingDirectory: workingDirectory);
     final ProcessResult results = _processManager.runSync(
       cmd,
       workingDirectory: workingDirectory,
       environment: _environment(allowReentrantFlutter, environment),
-      stderrEncoding: encoding,
-      stdoutEncoding: encoding,
     );
     final RunResult runResult = RunResult(results, cmd);
 
     _logger.printTrace('Exit code ${runResult.exitCode} from: ${cmd.join(' ')}');
 
     bool failedExitCode = runResult.exitCode != 0;
-    if (allowedFailures != null && failedExitCode) {
-      failedExitCode = !allowedFailures(runResult.exitCode);
+    if (whiteListFailures != null && failedExitCode) {
+      failedExitCode = !whiteListFailures(runResult.exitCode);
     }
 
     if (runResult.stdout.isNotEmpty && !hideStdout) {

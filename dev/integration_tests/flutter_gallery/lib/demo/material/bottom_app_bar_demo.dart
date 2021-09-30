@@ -323,7 +323,9 @@ class _Heading extends StatelessWidget {
       alignment: AlignmentDirectional.centerStart,
       child: Text(
         text,
-        style: theme.textTheme.bodyText1,
+        style: theme.textTheme.bodyText2.copyWith(
+          color: theme.primaryColor,
+        ),
       ),
     );
   }

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
@@ -54,7 +52,6 @@ const Border _kDefaultNavBarBorder = Border(
 // all transition between each other (per Navigator) via Hero transitions.
 const _HeroTag _defaultHeroTag = _HeroTag(null);
 
-@immutable
 class _HeroTag {
   const _HeroTag(this.navigator);
 
@@ -463,7 +460,7 @@ class _CupertinoNavigationBarState extends State<CupertinoNavigationBar> {
     );
 
     final Color actionsForegroundColor = CupertinoDynamicColor.resolve(
-      widget.actionsForegroundColor,
+      widget.actionsForegroundColor, // ignore: deprecated_member_use_from_same_package
       context,
     );
     if (!widget.transitionBetweenRoutes || !_isTransitionable(context)) {
@@ -694,8 +691,8 @@ class _CupertinoSliverNavigationBarState extends State<CupertinoSliverNavigation
   @override
   Widget build(BuildContext context) {
     // Lint ignore to maintain backward compatibility.
-    final Color actionsForegroundColor = CupertinoDynamicColor.resolve(widget.actionsForegroundColor, context)
-                                      ?? CupertinoTheme.of(context).primaryColor;
+    final Color actionsForegroundColor = CupertinoDynamicColor.resolve(widget.actionsForegroundColor, context)  // ignore: deprecated_member_use_from_same_package
+                                       ?? CupertinoTheme.of(context).primaryColor;
 
     final _NavigationBarStaticComponents components = _NavigationBarStaticComponents(
       keys: keys,
@@ -1063,7 +1060,7 @@ class _NavigationBarStaticComponents {
   }) {
     // Auto use the CupertinoPageRoute's title if middle not provided.
     if (automaticallyImplyTitle &&
-        currentRoute is CupertinoRouteTransitionMixin &&
+        currentRoute is CupertinoPageRoute &&
         currentRoute.title != null) {
       return Text(currentRoute.title);
     }
@@ -1451,8 +1448,8 @@ class _BackLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (specifiedPreviousTitle != null) {
       return _buildPreviousTitleWidget(context, specifiedPreviousTitle, null);
-    } else if (route is CupertinoRouteTransitionMixin<dynamic> && !route.isFirst) {
-      final CupertinoRouteTransitionMixin<dynamic> cupertinoRoute = route as CupertinoRouteTransitionMixin<dynamic>;
+    } else if (route is CupertinoPageRoute<dynamic> && !route.isFirst) {
+      final CupertinoPageRoute<dynamic> cupertinoRoute = route as CupertinoPageRoute<dynamic>;
       // There is no timing issue because the previousTitle Listenable changes
       // happen during route modifications before the ValueListenableBuilder
       // is built.

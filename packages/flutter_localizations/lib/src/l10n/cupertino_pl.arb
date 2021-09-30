@@ -28,7 +28,5 @@
   "cutButtonLabel": "Wytnij",
   "copyButtonLabel": "Kopiuj",
   "pasteButtonLabel": "Wklej",
-  "selectAllButtonLabel": "Wybierz wszystkie",
-  "tabSemanticsLabel": "Karta $tabIndex z $tabCount",
-  "modalBarrierDismissLabel": "Zamknij"
+  "selectAllButtonLabel": "Wybierz wszystkie"
 }

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'package:vm_service/vm_service.dart' as vm_service;
 
 import 'base/file_system.dart';
 import 'base/logger.dart';
@@ -24,15 +23,15 @@ class Tracing {
   static const String firstUsefulFrameEventName = kFirstFrameRasterizedEventName;
 
   static Future<Tracing> connect(Uri uri) async {
-    final vm_service.VmService observatory = await connectToVmService(uri);
+    final VMService observatory = await VMService.connect(uri);
     return Tracing(observatory);
   }
 
-  final vm_service.VmService vmService;
+  final VMService vmService;
 
   Future<void> startTracing() async {
-    await vmService.setVMTimelineFlags(<String>['Compiler', 'Dart', 'Embedder', 'GC']);
-    await vmService.clearVMTimeline();
+    await vmService.vm.setVMTimelineFlags(<String>['Compiler', 'Dart', 'Embedder', 'GC']);
+    await vmService.vm.clearVMTimeline();
   }
 
   /// Stops tracing; optionally wait for first frame.
@@ -46,24 +45,14 @@ class Tracing {
       );
       try {
         final Completer<void> whenFirstFrameRendered = Completer<void>();
-        try {
-          await vmService.streamListen(vm_service.EventStreams.kExtension);
-        } on vm_service.RPCError {
-          // It is safe to ignore this error because we expect an error to be
-          // thrown if we're already subscribed.
-        }
-        vmService.onExtensionEvent.listen((vm_service.Event event) {
+        (await vmService.onExtensionEvent).listen((ServiceEvent event) {
           if (event.extensionKind == 'Flutter.FirstFrame') {
             whenFirstFrameRendered.complete();
           }
         });
         bool done = false;
-        final List<FlutterView> views = await vmService.getFlutterViews();
-        for (final FlutterView view in views) {
-          if (await vmService
-              .flutterAlreadyPaintedFirstUsefulFrame(
-                isolateId: view.uiIsolate.id,
-              )) {
+        for (final FlutterView view in vmService.vm.views) {
+          if (await view.uiIsolate.flutterAlreadyPaintedFirstUsefulFrame()) {
             done = true;
             break;
           }
@@ -78,15 +67,15 @@ class Tracing {
       }
       status.stop();
     }
-    final vm_service.Timeline timeline = await vmService.getVMTimeline();
-    await vmService.setVMTimelineFlags(<String>[]);
-    return timeline.json;
+    final Map<String, dynamic> timeline = await vmService.vm.getVMTimeline();
+    await vmService.vm.setVMTimelineFlags(<String>[]);
+    return timeline;
   }
 }
 
 /// Download the startup trace information from the given observatory client and
 /// store it to build/start_up_info.json.
-Future<void> downloadStartupTrace(vm_service.VmService vmService, { bool awaitFirstFrame = true }) async {
+Future<void> downloadStartupTrace(VMService observatory, { bool awaitFirstFrame = true }) async {
   final String traceInfoFilePath = globals.fs.path.join(getBuildDirectory(), 'start_up_info.json');
   final File traceInfoFile = globals.fs.file(traceInfoFilePath);
 
@@ -100,7 +89,7 @@ Future<void> downloadStartupTrace(vm_service.VmService vmService, { bool awaitFi
     traceInfoFile.parent.createSync();
   }
 
-  final Tracing tracing = Tracing(vmService);
+  final Tracing tracing = Tracing(observatory);
 
   final Map<String, dynamic> timeline = await tracing.stopTracingAndDownloadTimeline(
     awaitFirstFrame: awaitFirstFrame,
@@ -108,7 +97,7 @@ Future<void> downloadStartupTrace(vm_service.VmService vmService, { bool awaitFi
 
   int extractInstantEventTimestamp(String eventName) {
     final List<Map<String, dynamic>> events =
-        List<Map<String, dynamic>>.from(timeline['traceEvents'] as List<dynamic>);
+        List<Map<String, dynamic>>.from((timeline['traceEvents'] as List<dynamic>).cast<Map<String, dynamic>>());
     final Map<String, dynamic> event = events.firstWhere(
       (Map<String, dynamic> event) => event['name'] == eventName, orElse: () => null,
     );

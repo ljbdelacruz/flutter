@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 void main() {
   runApp(
     DecoratedBox(
-      decoration: const BoxDecoration(color: Colors.white),
+      decoration: BoxDecoration(color: Colors.white),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

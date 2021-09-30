@@ -19,13 +19,10 @@ class IOSEmulators extends EmulatorDiscovery {
 
   @override
   Future<List<Emulator>> get emulators async => getEmulators();
-
-  @override
-  bool get canLaunchAnything => canListAnything;
 }
 
 class IOSEmulator extends Emulator {
-  const IOSEmulator(String id) : super(id, true);
+  IOSEmulator(String id) : super(id, true);
 
   @override
   String get name => 'iOS Simulator';
@@ -75,5 +72,5 @@ List<IOSEmulator> getEmulators() {
     return <IOSEmulator>[];
   }
 
-  return <IOSEmulator>[const IOSEmulator(iosSimulatorId)];
+  return <IOSEmulator>[IOSEmulator(iosSimulatorId)];
 }

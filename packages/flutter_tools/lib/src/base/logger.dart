@@ -783,13 +783,6 @@ class SilentStatus extends Status {
     timeoutConfiguration: timeoutConfiguration,
     stopwatch: stopwatch,
   );
-
-  @override
-  void finish() {
-    if (onFinish != null) {
-      onFinish();
-    }
-  }
 }
 
 /// Constructor writes [message] to [stdout].  On [cancel] or [stop], will call

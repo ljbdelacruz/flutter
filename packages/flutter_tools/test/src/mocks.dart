@@ -6,6 +6,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io show IOSink, ProcessSignal, Stdout, StdoutException;
 
+import 'package:platform/platform.dart';
+
 import 'package:flutter_tools/src/android/android_device.dart';
 import 'package:flutter_tools/src/android/android_sdk.dart' show AndroidSdk;
 import 'package:flutter_tools/src/application_package.dart';
@@ -13,22 +15,20 @@ import 'package:flutter_tools/src/base/bot_detector.dart';
 import 'package:flutter_tools/src/base/context.dart';
 import 'package:flutter_tools/src/base/file_system.dart' hide IOSink;
 import 'package:flutter_tools/src/base/io.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/build_info.dart';
 import 'package:flutter_tools/src/compile.dart';
+import 'package:flutter_tools/src/devfs.dart';
 import 'package:flutter_tools/src/device.dart';
-import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:flutter_tools/src/ios/devices.dart';
 import 'package:flutter_tools/src/ios/simulators.dart';
 import 'package:flutter_tools/src/project.dart';
 import 'package:flutter_tools/src/runner/flutter_command.dart';
+import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:mockito/mockito.dart';
-import 'package:package_config/package_config.dart';
 import 'package:process/process.dart';
 
 import 'common.dart';
 
-// TODO(fujino): replace FakePlatform.fromPlatform() with FakePlatform()
 final Generator kNoColorTerminalPlatform = () {
   return FakePlatform.fromPlatform(
     const LocalPlatform()
@@ -43,7 +43,7 @@ class MockApplicationPackageStore extends ApplicationPackageStore {
       versionCode: 1,
       launchActivity: 'io.flutter.android.mock.MockActivity',
     ),
-    iOS: BuildableIOSApp(MockIosProject(), MockIosProject.bundleId, MockIosProject.appBundleName),
+    iOS: BuildableIOSApp(MockIosProject(), MockIosProject.bundleId),
   );
 }
 
@@ -53,10 +53,9 @@ class MockApplicationPackageFactory extends Mock implements ApplicationPackageFa
   @override
   Future<ApplicationPackage> getPackageForPlatform(
     TargetPlatform platform, {
-    BuildInfo buildInfo,
     File applicationBinary,
   }) async {
-    return _store.getPackageForPlatform(platform, buildInfo);
+    return _store.getPackageForPlatform(platform);
   }
 }
 
@@ -244,11 +243,11 @@ class FakeProcess implements Process {
   FakeProcess({
     this.pid = 1,
     Future<int> exitCode,
-    IOSink stdin,
+    Stream<List<int>> stdin,
     this.stdout = const Stream<List<int>>.empty(),
     this.stderr = const Stream<List<int>>.empty(),
   }) : exitCode = exitCode ?? Future<int>.value(0),
-       stdin = stdin ?? MemoryIOSink();
+       stdin = stdin as IOSink ?? MemoryIOSink();
 
   @override
   final int pid;
@@ -481,8 +480,8 @@ class MockStdio extends Stdio {
   List<String> get writtenToStderr => _stderr.writes.map<String>(_stderr.encoding.decode).toList();
 }
 
-class FakePollingDeviceDiscovery extends PollingDeviceDiscovery {
-  FakePollingDeviceDiscovery() : super('mock');
+class MockPollingDeviceDiscovery extends PollingDeviceDiscovery {
+  MockPollingDeviceDiscovery() : super('mock');
 
   final List<Device> _devices = <Device>[];
   final StreamController<Device> _onAddedController = StreamController<Device>.broadcast();
@@ -528,13 +527,12 @@ class FakePollingDeviceDiscovery extends PollingDeviceDiscovery {
 
 class MockIosProject extends Mock implements IosProject {
   static const String bundleId = 'com.example.test';
-  static const String appBundleName = 'My Super Awesome App.app';
 
   @override
-  Future<String> productBundleIdentifier(BuildInfo buildInfo) async => bundleId;
+  Future<String> get productBundleIdentifier async => bundleId;
 
   @override
-  Future<String> hostAppBundleName(BuildInfo buildInfo) async => appBundleName;
+  String get hostAppBundleName => 'Runner.app';
 }
 
 class MockAndroidDevice extends Mock implements AndroidDevice {
@@ -585,7 +583,7 @@ class BasicMock {
   final List<String> messages = <String>[];
 
   void expectMessages(List<String> expectedMessages) {
-    final List<String> actualMessages = List<String>.of(messages);
+    final List<String> actualMessages = List<String>.from(messages);
     messages.clear();
     expect(actualMessages, unorderedEquals(expectedMessages));
   }
@@ -596,6 +594,31 @@ class BasicMock {
     final bool result = messages.contains(match);
     messages.clear();
     return result;
+  }
+}
+
+class MockDevFSOperations extends BasicMock implements DevFSOperations {
+  Map<Uri, DevFSContent> devicePathToContent = <Uri, DevFSContent>{};
+
+  @override
+  Future<Uri> create(String fsName) async {
+    messages.add('create $fsName');
+    return Uri.parse('file:///$fsName');
+  }
+
+  @override
+  Future<dynamic> destroy(String fsName) async {
+    messages.add('destroy $fsName');
+  }
+
+  @override
+  Future<dynamic> writeFile(String fsName, Uri deviceUri, DevFSContent content) async {
+    String message = 'writeFile $fsName $deviceUri';
+    if (content is DevFSFileContent) {
+      message += ' ${content.file.path}';
+    }
+    messages.add(message);
+    devicePathToContent[deviceUri] = content;
   }
 }
 
@@ -638,11 +661,7 @@ class MockResidentCompiler extends BasicMock implements ResidentCompiler {
   }
 
   @override
-  Future<CompilerOutput> recompile(Uri mainPath, List<Uri> invalidatedFiles, {
-    String outputPath,
-    PackageConfig packageConfig,
-    bool suppressErrors = false,
-  }) async {
+  Future<CompilerOutput> recompile(String mainPath, List<Uri> invalidatedFiles, { String outputPath, String packagesFilePath }) async {
     globals.fs.file(outputPath).createSync(recursive: true);
     globals.fs.file(outputPath).writeAsStringSync('compiled_kernel_output');
     return CompilerOutput(outputPath, 0, <Uri>[]);

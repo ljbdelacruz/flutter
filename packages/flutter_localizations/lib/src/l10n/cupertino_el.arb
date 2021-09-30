@@ -18,7 +18,5 @@
   "cutButtonLabel": "Αποκοπή",
   "copyButtonLabel": "Αντιγραφή",
   "pasteButtonLabel": "Επικόλληση",
-  "selectAllButtonLabel": "Επιλογή όλων",
-  "tabSemanticsLabel": "Καρτέλα $tabIndex από $tabCount",
-  "modalBarrierDismissLabel": "Παράβλεψη"
+  "selectAllButtonLabel": "Επιλογή όλων"
 }

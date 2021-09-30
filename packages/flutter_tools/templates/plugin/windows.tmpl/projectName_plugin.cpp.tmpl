@@ -1,4 +1,4 @@
-#include "include/{{projectName}}/{{projectName}}_plugin.h"
+#include "{{projectName}}_plugin.h"
 
 // This must be included before many other Windows headers.
 #include <windows.h>
@@ -83,7 +83,13 @@ void {{pluginClass}}::HandleMethodCall(
 
 void {{pluginClass}}RegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar) {
-  {{pluginClass}}::RegisterWithRegistrar(
-      flutter::PluginRegistrarManager::GetInstance()
-          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
+  // The plugin registrar wrappers owns the plugins, registered callbacks, etc.,
+  // so must remain valid for the life of the application.
+  static auto *plugin_registrars =
+      new std::map<FlutterDesktopPluginRegistrarRef,
+                   std::unique_ptr<flutter::PluginRegistrarWindows>>;
+  auto insert_result = plugin_registrars->emplace(
+      registrar, std::make_unique<flutter::PluginRegistrarWindows>(registrar));
+
+  {{pluginClass}}::RegisterWithRegistrar(insert_result.first->second.get());
 }

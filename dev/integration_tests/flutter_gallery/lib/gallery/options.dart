@@ -7,9 +7,8 @@ import 'package:flutter/material.dart';
 import 'about.dart';
 import 'scales.dart';
 
-@immutable
 class GalleryOptions {
-  const GalleryOptions({
+  GalleryOptions({
     this.themeMode,
     this.textScaleFactor,
     this.visualDensity,

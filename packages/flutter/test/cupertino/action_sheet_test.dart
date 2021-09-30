@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 
@@ -923,51 +921,38 @@ void main() {
             TestSemantics(
               children: <TestSemantics>[
                 TestSemantics(
+                  flags: <SemanticsFlag>[
+                    SemanticsFlag.scopesRoute,
+                    SemanticsFlag.namesRoute,
+                  ],
+                  label: 'Alert',
                   children: <TestSemantics>[
                     TestSemantics(
                       flags: <SemanticsFlag>[
-                        SemanticsFlag.scopesRoute,
-                        SemanticsFlag.namesRoute,
+                        SemanticsFlag.hasImplicitScrolling,
                       ],
-                      label: 'Alert',
+                      children: <TestSemantics>[
+                        TestSemantics(
+                          label: 'The title',
+                        ),
+                        TestSemantics(
+                          label: 'The message',
+                        ),
+                      ],
+                    ),
+                    TestSemantics(
+                      flags: <SemanticsFlag>[
+                        SemanticsFlag.hasImplicitScrolling,
+                      ],
                       children: <TestSemantics>[
                         TestSemantics(
                           flags: <SemanticsFlag>[
-                            SemanticsFlag.hasImplicitScrolling,
+                            SemanticsFlag.isButton,
                           ],
-                          children: <TestSemantics>[
-                            TestSemantics(
-                              label: 'The title',
-                            ),
-                            TestSemantics(
-                              label: 'The message',
-                            ),
+                          actions: <SemanticsAction>[
+                            SemanticsAction.tap,
                           ],
-                        ),
-                        TestSemantics(
-                          flags: <SemanticsFlag>[
-                            SemanticsFlag.hasImplicitScrolling,
-                          ],
-                          children: <TestSemantics>[
-                            TestSemantics(
-                              flags: <SemanticsFlag>[
-                                SemanticsFlag.isButton,
-                              ],
-                              actions: <SemanticsAction>[
-                                SemanticsAction.tap,
-                              ],
-                              label: 'One',
-                            ),
-                            TestSemantics(
-                              flags: <SemanticsFlag>[
-                                SemanticsFlag.isButton,
-                              ],
-                              actions: <SemanticsAction>[
-                                SemanticsAction.tap,
-                              ],
-                              label: 'Two',
-                            ),
-                          ],
+                          label: 'One',
                         ),
                         TestSemantics(
                           flags: <SemanticsFlag>[
@@ -976,11 +961,20 @@ void main() {
                           actions: <SemanticsAction>[
                             SemanticsAction.tap,
                           ],
-                          label: 'Cancel',
+                          label: 'Two',
                         ),
                       ],
                     ),
-                  ]
+                    TestSemantics(
+                      flags: <SemanticsFlag>[
+                        SemanticsFlag.isButton,
+                      ],
+                      actions: <SemanticsAction>[
+                        SemanticsAction.tap,
+                      ],
+                      label: 'Cancel',
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -16,20 +16,10 @@ import 'build.dart';
 
 /// A command to build a linux desktop target through a build shell script.
 class BuildLinuxCommand extends BuildSubCommand {
-  BuildLinuxCommand({ bool verboseHelp = false }) {
+  BuildLinuxCommand() {
     addTreeShakeIconsFlag();
+    addBuildModeFlags();
     usesTargetOption();
-    addBuildModeFlags(verboseHelp: verboseHelp);
-    usesPubOption();
-    addSplitDebugInfoOption();
-    addDartObfuscationOption();
-    usesDartDefineOption();
-    usesExtraFrontendOptions();
-    addEnableExperimentation(hide: !verboseHelp);
-    usesTrackWidgetCreation(verboseHelp: verboseHelp);
-    addBuildPerformanceFile(hide: !verboseHelp);
-    addBundleSkSLPathOption(hide: !verboseHelp);
-    addNullSafetyModeOptions(hide: !verboseHelp);
   }
 
   @override
@@ -44,10 +34,11 @@ class BuildLinuxCommand extends BuildSubCommand {
   };
 
   @override
-  String get description => 'Build a Linux desktop application.';
+  String get description => 'build the Linux desktop target.';
 
   @override
   Future<FlutterCommandResult> runCommand() async {
+    Cache.releaseLockEarly();
     final BuildInfo buildInfo = getBuildInfo();
     final FlutterProject flutterProject = FlutterProject.current();
     if (!featureFlags.isLinuxEnabled) {

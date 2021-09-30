@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -33,7 +31,7 @@ class _TextSpanEditingController extends TextEditingController {
 
   @override
   TextSpan buildTextSpan({TextStyle style ,bool withComposing}) {
-    // This does not care about composing.
+    // TODO(chunhtai): Implement composing.
     return TextSpan(
       style: style,
       children: <TextSpan>[_textSpan],
@@ -42,8 +40,7 @@ class _TextSpanEditingController extends TextEditingController {
 
   @override
   set text(String newText) {
-    // This should never be reached.
-    throw UnimplementedError();
+    // TODO(chunhtai): Implement value editing.
   }
 }
 
@@ -223,7 +220,6 @@ class SelectableText extends StatefulWidget {
     this.enableInteractiveSelection = true,
     this.onTap,
     this.scrollPhysics,
-    this.textHeightBehavior,
     this.textWidthBasis,
   }) :  assert(showCursor != null),
         assert(autofocus != null),
@@ -273,7 +269,6 @@ class SelectableText extends StatefulWidget {
     this.enableInteractiveSelection = true,
     this.onTap,
     this.scrollPhysics,
-    this.textHeightBehavior,
     this.textWidthBasis,
   }) :  assert(showCursor != null),
     assert(autofocus != null),
@@ -410,9 +405,6 @@ class SelectableText extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.scrollPhysics}
   final ScrollPhysics scrollPhysics;
 
-  /// {@macro flutter.dart:ui.textHeightBehavior}
-  final TextHeightBehavior textHeightBehavior;
-
   /// {@macro flutter.painting.textPainter.textWidthBasis}
   final TextWidthBasis textWidthBasis;
 
@@ -437,7 +429,6 @@ class SelectableText extends StatefulWidget {
     properties.add(DiagnosticsProperty<Color>('cursorColor', cursorColor, defaultValue: null));
     properties.add(FlagProperty('selectionEnabled', value: selectionEnabled, defaultValue: true, ifFalse: 'selection disabled'));
     properties.add(DiagnosticsProperty<ScrollPhysics>('scrollPhysics', scrollPhysics, defaultValue: null));
-    properties.add(DiagnosticsProperty<TextHeightBehavior>('textHeightBehavior', textHeightBehavior, defaultValue: null));
   }
 }
 
@@ -606,7 +597,6 @@ class _SelectableTextState extends State<SelectableText> with AutomaticKeepAlive
         style: effectiveTextStyle,
         readOnly: true,
         textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
-        textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
         showSelectionHandles: _showSelectionHandles,
         showCursor: widget.showCursor,
         controller: _controller,

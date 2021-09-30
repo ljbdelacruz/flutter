@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
@@ -869,7 +867,7 @@ class _CupertinoAlertContentSection extends StatelessWidget {
     if (title == null && content == null) {
       return SingleChildScrollView(
         controller: scrollController,
-        child: const SizedBox(width: 0.0, height: 0.0),
+        child: Container(width: 0.0, height: 0.0),
       );
     }
 
@@ -997,8 +995,7 @@ class _PressableActionButtonState extends State<_PressableActionButton> {
     return _ActionButtonParentDataWidget(
       isPressed: _isPressed,
       child: MergeSemantics(
-        // TODO(mattcarroll): Button press dynamics need overhaul for iOS:
-        // https://github.com/flutter/flutter/issues/19786
+        // TODO(mattcarroll): Button press dynamics need overhaul for iOS: https://github.com/flutter/flutter/issues/19786
         child: GestureDetector(
           excludeFromSemantics: true,
           behavior: HitTestBehavior.opaque,
@@ -1008,8 +1005,7 @@ class _PressableActionButtonState extends State<_PressableActionButton> {
           onTapUp: (TapUpDetails details) => setState(() {
             _isPressed = false;
           }),
-          // TODO(mattcarroll): Cancel is currently triggered when user moves
-          //  past slop instead of off button: https://github.com/flutter/flutter/issues/19783
+          // TODO(mattcarroll): Cancel is currently triggered when user moves past slop instead of off button: https://github.com/flutter/flutter/issues/19783
           onTapCancel: () => setState(() => _isPressed = false),
           child: widget.child,
         ),

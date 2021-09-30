@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:meta/meta.dart';
+import 'package:platform/platform.dart';
 import 'package:yaml/yaml.dart';
 
 import 'utils.dart';
+
+Platform get platform => _platform ??= const LocalPlatform();
+Platform _platform;
 
 /// Loads manifest data from `manifest.yaml` file or from [yaml], if present.
 Manifest loadTaskManifest([ String yaml ]) {
@@ -71,7 +73,7 @@ class ManifestTask {
         (String str) => str.split('/')[0]
       )
     );
-    String hostPlatform = Platform.operatingSystem;
+    String hostPlatform = platform.operatingSystem;
     if (hostPlatform == 'macos') {
       hostPlatform = 'mac'; // package:platform uses 'macos' while manifest.yaml uses 'mac'
     }

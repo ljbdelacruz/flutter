@@ -2,11 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/rendering.dart';
 
 import 'basic.dart';
 import 'container.dart';
@@ -108,7 +105,6 @@ class ModalBarrier extends StatelessWidget {
             label: semanticsDismissible ? semanticsLabel : null,
             textDirection: semanticsDismissible && semanticsLabel != null ? Directionality.of(context) : null,
             child: MouseRegion(
-              cursor: SystemMouseCursors.basic,
               opaque: true,
               child: ConstrainedBox(
                 constraints: const BoxConstraints.expand(),

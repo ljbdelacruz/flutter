@@ -35,7 +35,6 @@ void main() {
       when(mockVisualStudio.hasNecessaryComponents).thenReturn(true);
       when(mockVisualStudio.fullVersion).thenReturn('16.2');
       when(mockVisualStudio.displayName).thenReturn('Visual Studio Community 2019');
-      when(mockVisualStudio.getWindows10SDKVersion()).thenReturn('10.0.18362.0');
     }
 
     // Assigns default values for a complete VS installation that is too old.
@@ -49,7 +48,6 @@ void main() {
       when(mockVisualStudio.hasNecessaryComponents).thenReturn(true);
       when(mockVisualStudio.fullVersion).thenReturn('15.1');
       when(mockVisualStudio.displayName).thenReturn('Visual Studio Community 2017');
-      when(mockVisualStudio.getWindows10SDKVersion()).thenReturn('10.0.17763.0');
     }
 
     // Assigns default values for a missing VS installation.
@@ -61,7 +59,6 @@ void main() {
       when(mockVisualStudio.isLaunchable).thenReturn(false);
       when(mockVisualStudio.isRebootRequired).thenReturn(false);
       when(mockVisualStudio.hasNecessaryComponents).thenReturn(false);
-      when(mockVisualStudio.getWindows10SDKVersion()).thenReturn(null);
     }
 
     testWithoutContext('Emits a message when Visual Studio is a pre-release version', () async {
@@ -135,6 +132,7 @@ void main() {
         userMessages.visualStudioTooOld(
           mockVisualStudio.minimumVersionDescription,
           mockVisualStudio.workloadDescription,
+          mockVisualStudio.necessaryComponentDescriptions(),
         ),
       );
 
@@ -149,18 +147,6 @@ void main() {
       );
       _configureMockVisualStudioAsInstalled();
       when(mockVisualStudio.hasNecessaryComponents).thenReturn(false);
-      final ValidationResult result = await validator.validate();
-
-      expect(result.type, ValidationType.partial);
-    });
-
-    testWithoutContext('Emits partial status when Visual Studio is installed but the SDK cannot be found', () async {
-      final VisualStudioValidator validator = VisualStudioValidator(
-        userMessages: userMessages,
-        visualStudio: mockVisualStudio,
-      );
-      _configureMockVisualStudioAsInstalled();
-      when(mockVisualStudio.getWindows10SDKVersion()).thenReturn(null);
       final ValidationResult result = await validator.validate();
 
       expect(result.type, ValidationType.partial);
@@ -192,6 +178,7 @@ void main() {
       final ValidationMessage expectedMessage = ValidationMessage.error(
         userMessages.visualStudioMissing(
           mockVisualStudio.workloadDescription,
+          mockVisualStudio.necessaryComponentDescriptions(),
         ),
       );
 

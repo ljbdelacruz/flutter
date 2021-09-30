@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import '../flutter_test_alternative.dart';
@@ -126,7 +124,7 @@ void main() {
       expect(layer.find<int>(const Offset(100.0, 100.0)), 1);
     });
 
-    test('handles non-invertible transforms', () {
+    test('handles non-invertable transforms', () {
       final AnnotatedRegionLayer<int> child = AnnotatedRegionLayer<int>(1);
       final TransformLayer parent = TransformLayer(transform: Matrix4.diagonal3Values(0.0, 1.0, 1.0));
       parent.append(child);
@@ -276,7 +274,7 @@ void main() {
       expect(layer.findAllAnnotations<int>(const Offset(100.0, 100.0)).annotations.toList(), equals(<int>[1]));
     });
 
-    test('handles non-invertible transforms', () {
+    test('handles non-invertable transforms', () {
       final AnnotatedRegionLayer<int> child = AnnotatedRegionLayer<int>(1);
       final TransformLayer parent = TransformLayer(transform: Matrix4.diagonal3Values(0.0, 1.0, 1.0));
       parent.append(child);

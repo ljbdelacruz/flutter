@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,13 +9,13 @@ import 'package:flutter/src/services/keyboard_key.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-typedef PostInvokeCallback = void Function({Action<Intent> action, Intent intent, BuildContext context, ActionDispatcher dispatcher});
+typedef PostInvokeCallback = void Function({Action action, Intent intent, FocusNode focusNode, ActionDispatcher dispatcher});
 
-class TestAction extends CallbackAction<TestIntent> {
-  TestAction({
+class TestAction extends CallbackAction {
+  const TestAction({
     @required OnInvokeCallback onInvoke,
   })  : assert(onInvoke != null),
-        super(onInvoke: onInvoke);
+        super(key, onInvoke: onInvoke);
 
   static const LocalKey key = ValueKey<Type>(TestAction);
 }
@@ -28,15 +26,15 @@ class TestDispatcher extends ActionDispatcher {
   final PostInvokeCallback postInvoke;
 
   @override
-  Object invokeAction(Action<TestIntent> action, Intent intent, [BuildContext context]) {
-    final Object result = super.invokeAction(action, intent, context);
-    postInvoke?.call(action: action, intent: intent, context: context, dispatcher: this);
+  bool invokeAction(Action action, Intent intent, {FocusNode focusNode}) {
+    final bool result = super.invokeAction(action, intent, focusNode: focusNode);
+    postInvoke?.call(action: action, intent: intent, focusNode: focusNode, dispatcher: this);
     return result;
   }
 }
 
 class TestIntent extends Intent {
-  const TestIntent();
+  const TestIntent() : super(TestAction.key);
 }
 
 class TestShortcutManager extends ShortcutManager {
@@ -70,7 +68,6 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyD,
       );
-      // ignore: prefer_const_literals_to_create_immutables, https://github.com/dart-lang/linter/issues/2026
       final LogicalKeySet setFromSet = LogicalKeySet.fromSet(<LogicalKeyboardKey>{
         LogicalKeyboardKey.keyA,
         LogicalKeyboardKey.keyB,
@@ -126,7 +123,6 @@ void main() {
         LogicalKeyboardKey.keyB,
         LogicalKeyboardKey.keyA,
       );
-      // ignore: prefer_const_literals_to_create_immutables, https://github.com/dart-lang/linter/issues/2026
       final LogicalKeySet set4 = LogicalKeySet.fromSet(<LogicalKeyboardKey>{
         LogicalKeyboardKey.keyD,
         LogicalKeyboardKey.keyC,
@@ -142,7 +138,6 @@ void main() {
       expect(map.containsKey(LogicalKeySet(LogicalKeyboardKey.keyA)), isTrue);
       expect(
           set2,
-          // ignore: prefer_const_literals_to_create_immutables, https://github.com/dart-lang/linter/issues/2026
           equals(LogicalKeySet.fromSet(<LogicalKeyboardKey>{
             LogicalKeyboardKey.keyA,
             LogicalKeyboardKey.keyB,
@@ -193,24 +188,18 @@ void main() {
         LogicalKeyboardKey.keyB,
       ).debugFillProperties(builder);
 
-      final List<String> description = builder.properties.where((DiagnosticsNode node) {
-        return !node.isFiltered(DiagnosticLevel.info);
-      }).map((DiagnosticsNode node) => node.toString()).toList();
+      final List<String> description = builder.properties
+          .where((DiagnosticsNode node) {
+            return !node.isFiltered(DiagnosticLevel.info);
+          })
+          .map((DiagnosticsNode node) => node.toString())
+          .toList();
 
       expect(description.length, equals(1));
       expect(description[0], equals('keys: Key A + Key B'));
     });
   });
   group(Shortcuts, () {
-    testWidgets('Default constructed Shortcuts has empty shortcuts', (WidgetTester tester) async {
-      final ShortcutManager manager = ShortcutManager();
-      expect(manager.shortcuts, isNotNull);
-      expect(manager.shortcuts, isEmpty);
-      const Shortcuts shortcuts = Shortcuts(shortcuts: <LogicalKeySet, Intent>{}, child: SizedBox());
-      await tester.pumpWidget(shortcuts);
-      expect(shortcuts.shortcuts, isNotNull);
-      expect(shortcuts.shortcuts, isEmpty);
-    });
     testWidgets('ShortcutManager handles shortcuts', (WidgetTester tester) async {
       final GlobalKey containerKey = GlobalKey();
       final List<LogicalKeyboardKey> pressedKeys = <LogicalKeyboardKey>[];
@@ -218,11 +207,10 @@ void main() {
       bool invoked = false;
       await tester.pumpWidget(
         Actions(
-          actions: <Type, Action<Intent>>{
-            TestIntent: TestAction(
-              onInvoke: (Intent intent) {
+          actions: <LocalKey, ActionFactory>{
+            TestAction.key: () => TestAction(
+              onInvoke: (FocusNode node, Intent intent) {
                 invoked = true;
-                return true;
               },
             ),
           },
@@ -256,11 +244,10 @@ void main() {
             LogicalKeySet(LogicalKeyboardKey.shift): const TestIntent(),
           },
           child: Actions(
-            actions: <Type, Action<Intent>>{
-              TestIntent: TestAction(
-                onInvoke: (Intent intent) {
+            actions: <LocalKey, ActionFactory>{
+              TestAction.key: () => TestAction(
+                onInvoke: (FocusNode node, Intent intent) {
                   invoked = true;
-                  return invoked;
                 },
               ),
             },
@@ -295,11 +282,10 @@ void main() {
               LogicalKeySet(LogicalKeyboardKey.shift): const TestIntent(),
             },
             child: Actions(
-              actions: <Type, Action<Intent>>{
-                TestIntent: TestAction(
-                  onInvoke: (Intent intent) {
+              actions: <LocalKey, ActionFactory>{
+                TestAction.key: () => TestAction(
+                  onInvoke: (FocusNode node, Intent intent) {
                     invoked = true;
-                    return invoked;
                   },
                 ),
               },
@@ -325,29 +311,27 @@ void main() {
     test('Shortcuts diagnostics work.', () {
       final DiagnosticPropertiesBuilder builder = DiagnosticPropertiesBuilder();
 
-      Shortcuts(
-        shortcuts: <LogicalKeySet, Intent>{
-          LogicalKeySet(
-            LogicalKeyboardKey.shift,
-            LogicalKeyboardKey.keyA,
-          ): const ActivateIntent(),
-          LogicalKeySet(
-            LogicalKeyboardKey.shift,
-            LogicalKeyboardKey.arrowRight,
-          ): const DirectionalFocusIntent(TraversalDirection.right)
-        },
-        child: const SizedBox(),
-      ).debugFillProperties(builder);
+      Shortcuts(shortcuts: <LogicalKeySet, Intent>{LogicalKeySet(
+        LogicalKeyboardKey.shift,
+        LogicalKeyboardKey.keyA,
+      ) : const Intent(ActivateAction.key),
+        LogicalKeySet(
+        LogicalKeyboardKey.shift,
+        LogicalKeyboardKey.arrowRight,
+      ) : const DirectionalFocusIntent(TraversalDirection.right)}).debugFillProperties(builder);
 
-      final List<String> description = builder.properties.where((DiagnosticsNode node) {
+      final List<String> description = builder.properties
+          .where((DiagnosticsNode node) {
         return !node.isFiltered(DiagnosticLevel.info);
-      }).map((DiagnosticsNode node) => node.toString()).toList();
+      })
+          .map((DiagnosticsNode node) => node.toString())
+          .toList();
 
       expect(description.length, equals(1));
       expect(
           description[0],
           equalsIgnoringHashCodes(
-              'shortcuts: {{Shift + Key A}: ActivateIntent#00000, {Shift + Arrow Right}: DirectionalFocusIntent#00000}'));
+              'shortcuts: {{Shift + Key A}: Intent#00000(key: [<ActivateAction>]), {Shift + Arrow Right}: DirectionalFocusIntent#00000(key: [<DirectionalFocusAction>])}'));
     });
     test('Shortcuts diagnostics work when debugLabel specified.', () {
       final DiagnosticPropertiesBuilder builder = DiagnosticPropertiesBuilder();
@@ -358,14 +342,16 @@ void main() {
           LogicalKeySet(
             LogicalKeyboardKey.keyA,
             LogicalKeyboardKey.keyB,
-          ): const ActivateIntent(),
+          ): const Intent(ActivateAction.key)
         },
-        child: const SizedBox(),
       ).debugFillProperties(builder);
 
-      final List<String> description = builder.properties.where((DiagnosticsNode node) {
+      final List<String> description = builder.properties
+          .where((DiagnosticsNode node) {
         return !node.isFiltered(DiagnosticLevel.info);
-      }).map((DiagnosticsNode node) => node.toString()).toList();
+      })
+          .map((DiagnosticsNode node) => node.toString())
+          .toList();
 
       expect(description.length, equals(1));
       expect(description[0], equals('shortcuts: <Debug Label>'));
@@ -379,18 +365,20 @@ void main() {
           LogicalKeySet(
             LogicalKeyboardKey.keyA,
             LogicalKeyboardKey.keyB,
-          ): const ActivateIntent(),
+          ): const Intent(ActivateAction.key)
         },
-        child: const SizedBox(),
       ).debugFillProperties(builder);
 
-      final List<String> description = builder.properties.where((DiagnosticsNode node) {
+      final List<String> description = builder.properties
+          .where((DiagnosticsNode node) {
         return !node.isFiltered(DiagnosticLevel.info);
-      }).map((DiagnosticsNode node) => node.toString()).toList();
+      })
+          .map((DiagnosticsNode node) => node.toString())
+          .toList();
 
       expect(description.length, equals(2));
       expect(description[0], equalsIgnoringHashCodes('manager: ShortcutManager#00000(shortcuts: {})'));
-      expect(description[1], equalsIgnoringHashCodes('shortcuts: {{Key A + Key B}: ActivateIntent#00000}'));
+      expect(description[1], equalsIgnoringHashCodes('shortcuts: {{Key A + Key B}: Intent#00000(key: [<ActivateAction>])}'));
     });
   });
 }

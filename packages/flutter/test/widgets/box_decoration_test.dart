@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -114,7 +112,7 @@ Future<void> main() async {
         child: Container(
           key: key,
           decoration: BoxDecoration(border: Border.all(width: 10.0)),
-          child: const SizedBox(
+          child: Container(
             width: 25.0,
             height: 25.0,
           ),

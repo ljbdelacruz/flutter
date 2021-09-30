@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -203,7 +201,6 @@ abstract class Gradient {
   ///
   /// The shader's transform will be resolved from the [transform] of this
   /// gradient.
-  @factory
   Shader createShader(Rect rect, { TextDirection textDirection });
 
   /// Returns a new gradient with its properties scaled by the given factor.

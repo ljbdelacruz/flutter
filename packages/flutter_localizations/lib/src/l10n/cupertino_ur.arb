@@ -18,7 +18,5 @@
   "cutButtonLabel": "کٹ کریں",
   "copyButtonLabel": "کاپی کریں",
   "pasteButtonLabel": "پیسٹ کریں",
-  "selectAllButtonLabel": "سبھی منتخب کریں",
-  "tabSemanticsLabel": "$tabCount میں سے $tabIndex ٹیب",
-  "modalBarrierDismissLabel": "برخاست کریں"
+  "selectAllButtonLabel": "سبھی منتخب کریں"
 }

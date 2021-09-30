@@ -5,11 +5,13 @@
 import 'package:file/file.dart';
 import 'package:flutter_tools/src/base/error_handling_file_system.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:mockito/mockito.dart';
+import 'package:platform/platform.dart';
 import 'package:path/path.dart' as path; // ignore: package_path_import
 
 import '../../src/common.dart';
+import '../../src/context.dart';
+import '../../src/testbed.dart';
 
 class MockFile extends Mock implements File {}
 class MockFileSystem extends Mock implements FileSystem {}
@@ -21,200 +23,93 @@ final Platform windowsPlatform = FakePlatform(
   environment: <String, String>{}
 );
 
-final Platform linuxPlatform = FakePlatform(
-  operatingSystem: 'linux',
-  environment: <String, String>{}
-);
-
-void setupWriteMocks({
-  FileSystem mockFileSystem,
-  ErrorHandlingFileSystem fs,
-  int errorCode,
-}) {
-  final MockFile mockFile = MockFile();
-  when(mockFileSystem.file(any)).thenReturn(mockFile);
-  when(mockFile.writeAsBytes(
-    any,
-    mode: anyNamed('mode'),
-    flush: anyNamed('flush'),
-  )).thenAnswer((_) async {
-    throw FileSystemException('', '', OSError('', errorCode));
-  });
-  when(mockFile.writeAsString(
-    any,
-    mode: anyNamed('mode'),
-    encoding: anyNamed('encoding'),
-    flush: anyNamed('flush'),
-  )).thenAnswer((_) async {
-    throw FileSystemException('', '', OSError('', errorCode));
-  });
-  when(mockFile.writeAsBytesSync(
-    any,
-    mode: anyNamed('mode'),
-    flush: anyNamed('flush'),
-  )).thenThrow(FileSystemException('', '', OSError('', errorCode)));
-  when(mockFile.writeAsStringSync(
-    any,
-    mode: anyNamed('mode'),
-    encoding: anyNamed('encoding'),
-    flush: anyNamed('flush'),
-  )).thenThrow(FileSystemException('', '', OSError('', errorCode)));
-}
-
-void setupCreateTempMocks({
-  FileSystem mockFileSystem,
-  ErrorHandlingFileSystem fs,
-  int errorCode,
-}) {
-  final MockDirectory mockDirectory = MockDirectory();
-  when(mockFileSystem.directory(any)).thenReturn(mockDirectory);
-  when(mockDirectory.createTemp(any)).thenAnswer((_) async {
-    throw FileSystemException('', '', OSError('', errorCode));
-  });
-  when(mockDirectory.createTempSync(any))
-    .thenThrow(FileSystemException('', '', OSError('', errorCode)));
-}
-
 void main() {
   group('throws ToolExit on Windows', () {
     const int kDeviceFull = 112;
     const int kUserMappedSectionOpened = 1224;
+    Testbed testbed;
     MockFileSystem mockFileSystem;
     ErrorHandlingFileSystem fs;
 
     setUp(() {
       mockFileSystem = MockFileSystem();
-      fs = ErrorHandlingFileSystem(
-        delegate: mockFileSystem,
-        platform: windowsPlatform,
-      );
+      fs = ErrorHandlingFileSystem(mockFileSystem);
       when(mockFileSystem.path).thenReturn(MockPathContext());
+      testbed = Testbed(overrides: <Type, Generator>{
+        Platform: () => windowsPlatform,
+      });
     });
 
-    testWithoutContext('when writing to a full device', () async {
-      setupWriteMocks(
-        mockFileSystem: mockFileSystem,
-        fs: fs,
-        errorCode: kDeviceFull,
-      );
+    void writeTests({
+      String testName,
+      int errorCode,
+      String expectedMessage,
+    }) {
+      test(testName, () => testbed.run(() async {
+        final MockFile mockFile = MockFile();
+        when(mockFileSystem.file(any)).thenReturn(mockFile);
+        when(mockFile.writeAsBytes(
+          any,
+          mode: anyNamed('mode'),
+          flush: anyNamed('flush'),
+        )).thenAnswer((_) async {
+          throw FileSystemException('', '', OSError('', errorCode));
+        });
+        when(mockFile.writeAsString(
+          any,
+          mode: anyNamed('mode'),
+          encoding: anyNamed('encoding'),
+          flush: anyNamed('flush'),
+        )).thenAnswer((_) async {
+          throw FileSystemException('', '', OSError('', errorCode));
+        });
+        when(mockFile.writeAsBytesSync(
+          any,
+          mode: anyNamed('mode'),
+          flush: anyNamed('flush'),
+        )).thenThrow(FileSystemException('', '', OSError('', errorCode)));
+        when(mockFile.writeAsStringSync(
+          any,
+          mode: anyNamed('mode'),
+          encoding: anyNamed('encoding'),
+          flush: anyNamed('flush'),
+        )).thenThrow(FileSystemException('', '', OSError('', errorCode)));
 
-      final File file = fs.file('file');
+        final File file = fs.file('file');
 
-      const String expectedMessage = 'The target device is full';
-      expect(() async => await file.writeAsBytes(<int>[0]),
-             throwsToolExit(message: expectedMessage));
-      expect(() async => await file.writeAsString(''),
-             throwsToolExit(message: expectedMessage));
-      expect(() => file.writeAsBytesSync(<int>[0]),
-             throwsToolExit(message: expectedMessage));
-      expect(() => file.writeAsStringSync(''),
-             throwsToolExit(message: expectedMessage));
-    });
+        expect(() async => await file.writeAsBytes(<int>[0]),
+               throwsToolExit(message: expectedMessage));
+        expect(() async => await file.writeAsString(''),
+               throwsToolExit(message: expectedMessage));
+        expect(() => file.writeAsBytesSync(<int>[0]),
+               throwsToolExit(message: expectedMessage));
+        expect(() => file.writeAsStringSync(''),
+               throwsToolExit(message: expectedMessage));
+      }));
+    }
 
-    testWithoutContext('when the file is being used by another program', () async {
-      setupWriteMocks(
-        mockFileSystem: mockFileSystem,
-        fs: fs,
-        errorCode: kUserMappedSectionOpened,
-      );
-
-      final File file = fs.file('file');
-
-      const String expectedMessage = 'The file is being used by another program';
-      expect(() async => await file.writeAsBytes(<int>[0]),
-             throwsToolExit(message: expectedMessage));
-      expect(() async => await file.writeAsString(''),
-             throwsToolExit(message: expectedMessage));
-      expect(() => file.writeAsBytesSync(<int>[0]),
-             throwsToolExit(message: expectedMessage));
-      expect(() => file.writeAsStringSync(''),
-             throwsToolExit(message: expectedMessage));
-    });
-
-    testWithoutContext('when creating a temporary dir on a full device', () async {
-      setupCreateTempMocks(
-        mockFileSystem: mockFileSystem,
-        fs: fs,
-        errorCode: kDeviceFull,
-      );
-
-      final Directory directory = fs.directory('directory');
-
-      const String expectedMessage = 'The target device is full';
-      expect(() async => await directory.createTemp('prefix'),
-             throwsToolExit(message: expectedMessage));
-      expect(() => directory.createTempSync('prefix'),
-             throwsToolExit(message: expectedMessage));
-    });
-  });
-
-  group('throws ToolExit on Linux', () {
-    const int enospc= 28;
-    MockFileSystem mockFileSystem;
-    ErrorHandlingFileSystem fs;
-
-    setUp(() {
-      mockFileSystem = MockFileSystem();
-      fs = ErrorHandlingFileSystem(
-        delegate: mockFileSystem,
-        platform: linuxPlatform,
-      );
-      when(mockFileSystem.path).thenReturn(MockPathContext());
-    });
-
-    testWithoutContext('when writing to a full device', () async {
-      setupWriteMocks(
-        mockFileSystem: mockFileSystem,
-        fs: fs,
-        errorCode: enospc,
-      );
-
-      final File file = fs.file('file');
-
-      const String expectedMessage = 'The target device is full';
-      expect(() async => await file.writeAsBytes(<int>[0]),
-             throwsToolExit(message: expectedMessage));
-      expect(() async => await file.writeAsString(''),
-             throwsToolExit(message: expectedMessage));
-      expect(() => file.writeAsBytesSync(<int>[0]),
-             throwsToolExit(message: expectedMessage));
-      expect(() => file.writeAsStringSync(''),
-             throwsToolExit(message: expectedMessage));
-    });
-
-    testWithoutContext('when creating a temporary dir on a full device', () async {
-      setupCreateTempMocks(
-        mockFileSystem: mockFileSystem,
-        fs: fs,
-        errorCode: enospc,
-      );
-
-      final Directory directory = fs.directory('directory');
-
-      const String expectedMessage = 'The target device is full';
-      expect(() async => await directory.createTemp('prefix'),
-             throwsToolExit(message: expectedMessage));
-      expect(() => directory.createTempSync('prefix'),
-             throwsToolExit(message: expectedMessage));
-    });
-  });
-
-  testWithoutContext('Caches path context correctly', () {
-    final MockFileSystem mockFileSystem = MockFileSystem();
-    final FileSystem fs = ErrorHandlingFileSystem(
-      delegate: mockFileSystem,
-      platform: const LocalPlatform(),
+    writeTests(
+      testName: 'when writing to a full device',
+      errorCode: kDeviceFull,
+      expectedMessage: 'The target device is full',
     );
+    writeTests(
+      testName: 'when the file is being used by another program',
+      errorCode: kUserMappedSectionOpened,
+      expectedMessage: 'The file is being used by another program',
+    );
+  });
+
+  test('Caches path context correctly', () {
+    final MockFileSystem mockFileSystem = MockFileSystem();
+    final FileSystem fs = ErrorHandlingFileSystem(mockFileSystem);
 
     expect(identical(fs.path, fs.path), true);
   });
 
-  testWithoutContext('Clears cache when CWD changes', () {
+  test('Clears cache when CWD changes', () {
     final MockFileSystem mockFileSystem = MockFileSystem();
-    final FileSystem fs = ErrorHandlingFileSystem(
-      delegate: mockFileSystem,
-      platform: const LocalPlatform(),
-    );
+    final FileSystem fs = ErrorHandlingFileSystem(mockFileSystem);
 
     final Object firstPath = fs.path;
 
@@ -224,11 +119,8 @@ void main() {
     expect(identical(firstPath, fs.path), false);
   });
 
-  testWithoutContext('Throws type error if Directory type is set to curentDirectory with LocalFileSystem', () {
-    final FileSystem fs = ErrorHandlingFileSystem(
-      delegate: LocalFileSystem.instance,
-      platform: const LocalPlatform(),
-    );
+  test('Throws type error if Directory type is set to curentDirectory with LocalFileSystem', () {
+    final FileSystem fs = ErrorHandlingFileSystem(const LocalFileSystem());
     final MockDirectory directory = MockDirectory();
     when(directory.path).thenReturn('path');
 
@@ -236,23 +128,17 @@ void main() {
   });
 
   group('toString() gives toString() of delegate', () {
-    testWithoutContext('ErrorHandlingFileSystem', () {
+    test('ErrorHandlingFileSystem', () {
       final MockFileSystem mockFileSystem = MockFileSystem();
-      final FileSystem fs = ErrorHandlingFileSystem(
-        delegate: mockFileSystem,
-        platform: const LocalPlatform(),
-      );
+      final FileSystem fs = ErrorHandlingFileSystem(mockFileSystem);
 
       expect(mockFileSystem.toString(), isNotNull);
       expect(fs.toString(), equals(mockFileSystem.toString()));
     });
 
-    testWithoutContext('ErrorHandlingFile', () {
+    test('ErrorHandlingFile', () {
       final MockFileSystem mockFileSystem = MockFileSystem();
-      final FileSystem fs = ErrorHandlingFileSystem(
-        delegate: mockFileSystem,
-        platform: const LocalPlatform(),
-      );
+      final FileSystem fs = ErrorHandlingFileSystem(mockFileSystem);
       final MockFile mockFile = MockFile();
       when(mockFileSystem.file(any)).thenReturn(mockFile);
 

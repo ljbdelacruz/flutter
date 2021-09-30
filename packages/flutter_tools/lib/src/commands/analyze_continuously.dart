@@ -6,28 +6,27 @@ import 'dart:async';
 
 import 'package:args/args.dart';
 import 'package:meta/meta.dart';
+import 'package:platform/platform.dart';
 import 'package:process/process.dart';
 
-import '../artifacts.dart';
 import '../base/common.dart';
 import '../base/file_system.dart';
 import '../base/io.dart';
 import '../base/logger.dart';
-import '../base/platform.dart';
 import '../base/terminal.dart';
 import '../base/utils.dart';
+import '../cache.dart';
 import '../dart/analysis.dart';
+import '../dart/sdk.dart' as sdk;
 import 'analyze_base.dart';
 
 class AnalyzeContinuously extends AnalyzeBase {
   AnalyzeContinuously(ArgResults argResults, List<String> repoRoots, List<Directory> repoPackages, {
     @required FileSystem fileSystem,
     @required Logger logger,
-    @required Terminal terminal,
+    @required AnsiTerminal terminal,
     @required Platform platform,
     @required ProcessManager processManager,
-    @required List<String> experiments,
-    @required Artifacts artifacts,
   }) : super(
         argResults,
         repoPackages: repoPackages,
@@ -37,8 +36,6 @@ class AnalyzeContinuously extends AnalyzeBase {
         platform: platform,
         terminal: terminal,
         processManager: processManager,
-        experiments: experiments,
-        artifacts: artifacts,
       );
 
   String analysisTarget;
@@ -69,8 +66,7 @@ class AnalyzeContinuously extends AnalyzeBase {
       analysisTarget = fileSystem.currentDirectory.path;
     }
 
-    final String sdkPath = argResults['dart-sdk'] as String ??
-      artifacts.getArtifactPath(Artifact.engineDartSdkPath);
+    final String sdkPath = argResults['dart-sdk'] as String ?? sdk.dartSdkPath;
 
     final AnalysisServer server = AnalysisServer(sdkPath, directories,
       fileSystem: fileSystem,
@@ -78,10 +74,11 @@ class AnalyzeContinuously extends AnalyzeBase {
       platform: platform,
       processManager: processManager,
       terminal: terminal,
-      experiments: experiments,
     );
     server.onAnalyzing.listen((bool isAnalyzing) => _handleAnalysisStatus(server, isAnalyzing));
     server.onErrors.listen(_handleAnalysisErrors);
+
+    Cache.releaseLockEarly();
 
     await server.start();
     final int exitCode = await server.onExit;

@@ -62,11 +62,13 @@ bool checkCacheIsCurrent() {
 }
 
 List<String> get binariesWithEntitlements => List<String>.unmodifiable(<String>[
+  'idevice_id',
   'ideviceinfo',
   'idevicename',
   'idevicescreenshot',
   'idevicesyslog',
   'libimobiledevice.6.dylib',
+  'ideviceinstaller',
   'libplist.3.dylib',
   'iproxy',
   'libusbmuxd.4.dylib',

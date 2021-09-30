@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
@@ -12,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/gestures.dart' show DragStartBehavior, PointerDeviceKind;
 
 import '../widgets/semantics_tester.dart';
 
@@ -376,30 +374,6 @@ void main() {
     expect(textBox.size, const Size(633.0, 28.0));
   });
 
-  testWidgets('can switch between textHeightBehavior', (WidgetTester tester) async {
-    const String text = 'selectable text';
-    const TextHeightBehavior textHeightBehavior = TextHeightBehavior(
-      applyHeightToFirstAscent: false,
-      applyHeightToLastDescent: false,
-    );
-    await tester.pumpWidget(
-      boilerplate(
-        child: const SelectableText(text),
-      ),
-    );
-    expect(findRenderEditable(tester).textHeightBehavior, isNull);
-
-    await tester.pumpWidget(
-      boilerplate(
-        child: const SelectableText(
-          text,
-          textHeightBehavior: textHeightBehavior,
-        ),
-      ),
-    );
-    expect(findRenderEditable(tester).textHeightBehavior, textHeightBehavior);
-  });
-
   testWidgets('Cursor blinks when showCursor is true', (WidgetTester tester) async {
     await tester.pumpWidget(
       overlay(
@@ -456,7 +430,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Select all'), findsOneWidget);
+    expect(find.text('SELECT ALL'), findsOneWidget);
   });
 
   testWidgets('Caret position is updated on tap', (WidgetTester tester) async {
@@ -633,9 +607,9 @@ void main() {
     await tester.pump();
 
     // Context menu should not have paste and cut.
-    expect(find.text('Copy'), findsOneWidget);
-    expect(find.text('Paste'), findsNothing);
-    expect(find.text('Cut'), findsNothing);
+    expect(find.text('COPY'), findsOneWidget);
+    expect(find.text('PASTE'), findsNothing);
+    expect(find.text('CUT'), findsNothing);
   });
 
   testWidgets('selectable text can disable toolbar options', (WidgetTester tester) async {
@@ -655,8 +629,8 @@ void main() {
     await tester.longPressAt(dPos);
     await tester.pump();
     // Context menu should not have copy.
-    expect(find.text('Copy'), findsNothing);
-    expect(find.text('Select all'), findsOneWidget);
+    expect(find.text('COPY'), findsNothing);
+    expect(find.text('SELECT ALL'), findsOneWidget);
   });
 
   testWidgets('Can select text by dragging with a mouse', (WidgetTester tester) async {
@@ -948,14 +922,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200)); // skip past the frame where the opacity is zero
 
-    // Select all should select all the text.
-    await tester.tap(find.text('Select all'));
+    // SELECT ALL should select all the text.
+    await tester.tap(find.text('SELECT ALL'));
     await tester.pump();
     expect(controller.selection.baseOffset, 0);
     expect(controller.selection.extentOffset, testValue.length);
 
-    // Copy should reset the selection.
-    await tester.tap(find.text('Copy'));
+    // COPY should reset the selection.
+    await tester.tap(find.text('COPY'));
     await skipPastScrollingAnimation(tester);
     expect(controller.selection.isCollapsed, true);
   });
@@ -1086,7 +1060,7 @@ void main() {
 
     expect(controller.selection.baseOffset, 5);
     expect(controller.selection.extentOffset, 50);
-    await tester.tap(find.text('Copy'));
+    await tester.tap(find.text('COPY'));
     await tester.pump();
     expect(controller.selection.isCollapsed, true);
   });
@@ -2695,7 +2669,7 @@ void main() {
       await tester.pump();
 
       // Plain collapsed selection at the edge of first word. In iOS 12, the
-      // first tap after a double tap ends up putting the cursor at where
+      // the first tap after a double tap ends up putting the cursor at where
       // you tapped instead of the edge like every other single tap. This is
       // likely a bug in iOS 12 and not present in other versions.
       expect(
@@ -3493,7 +3467,7 @@ void main() {
       expect(
         tester.getSize(find.byType(SelectableText)),
         // When the strut fontSize is larger than a provided TextStyle, the
-        // strut's height takes precedence.
+        // the strut's height takes precedence.
         const Size(93.0, 54.0),
       );
     },
@@ -3769,125 +3743,4 @@ void main() {
       expect(editableText.selectionOverlay.handlesAreVisible, isFalse);
     },
   );
-
-  testWidgets('text span with tap gesture recognizer works in selectable rich text', (WidgetTester tester) async {
-    int spyTaps = 0;
-    final TapGestureRecognizer spyRecognizer = TapGestureRecognizer()
-      ..onTap = () {
-        spyTaps += 1;
-      };
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Material(
-          child: Center(
-            child: SelectableText.rich(
-              TextSpan(
-                children: <TextSpan>[
-                  const TextSpan(text: 'Atwater '),
-                  TextSpan(text: 'Peel', recognizer: spyRecognizer),
-                  const TextSpan(text: ' Sherbrooke Bonaventure'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    expect(spyTaps, 0);
-    final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
-
-    await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
-    expect(spyTaps, 1);
-
-    // Waits for a while to avoid double taps.
-    await tester.pump(const Duration(seconds: 1));
-
-    // Starts a long press.
-    final TestGesture gesture =
-      await tester.startGesture(selectableTextStart + const Offset(150.0, 5.0));
-    await tester.pump(const Duration(milliseconds: 500));
-    await gesture.up();
-    await tester.pump();
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-
-    final TextEditingController controller = editableTextWidget.controller;
-    // Long press still triggers selection.
-    expect(
-      controller.selection,
-      const TextSelection(baseOffset: 8, extentOffset: 12),
-    );
-    // Long press does not trigger gesture recognizer.
-    expect(spyTaps, 1);
-  });
-
-  testWidgets('text span with long press gesture recognizer works in selectable rich text', (WidgetTester tester) async {
-    int spyLongPress = 0;
-    final LongPressGestureRecognizer spyRecognizer = LongPressGestureRecognizer()
-      ..onLongPress = () {
-        spyLongPress += 1;
-      };
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Material(
-          child: Center(
-            child: SelectableText.rich(
-              TextSpan(
-                children: <TextSpan>[
-                  const TextSpan(text: 'Atwater '),
-                  TextSpan(text: 'Peel', recognizer: spyRecognizer),
-                  const TextSpan(text: ' Sherbrooke Bonaventure'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    expect(spyLongPress, 0);
-    final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
-
-    await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
-    expect(spyLongPress, 0);
-
-    // Waits for a while to avoid double taps.
-    await tester.pump(const Duration(seconds: 1));
-
-    // Starts a long press.
-    final TestGesture gesture =
-    await tester.startGesture(selectableTextStart + const Offset(150.0, 5.0));
-    await tester.pump(const Duration(milliseconds: 500));
-    await gesture.up();
-    await tester.pump();
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-
-    final TextEditingController controller = editableTextWidget.controller;
-    // Long press does not trigger selection if there is text span with long
-    // press recognizer.
-    expect(
-      controller.selection,
-      const TextSelection(baseOffset: 11, extentOffset: 11, affinity: TextAffinity.upstream),
-    );
-    // Long press triggers gesture recognizer.
-    expect(spyLongPress, 1);
-  });
-
-  testWidgets('SelectableText changes mouse cursor when hovered', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(
-          child: Center(
-            child: SelectableText('test'),
-          ),
-        ),
-      ),
-    );
-
-    final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse, pointer: 1);
-    await gesture.addPointer(location: tester.getCenter(find.text('test')));
-    addTearDown(gesture.removePointer);
-
-    await tester.pump();
-
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
-  });
 }

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 import 'box.dart';
 import 'layer.dart';
@@ -37,14 +35,10 @@ import 'object.dart';
 ///  * <https://api.flutter.dev/objcdoc/Protocols/FlutterTextureRegistry.html>
 ///    for how to create and manage backend textures on iOS.
 class TextureBox extends RenderBox {
-  /// Creates a box backed by the texture identified by [textureId], and use
-  /// [filterQuality] to set texture's [FilterQuality].
-  TextureBox({
-    @required int textureId,
-    FilterQuality filterQuality = FilterQuality.low,
-  }) : assert(textureId != null),
-      _textureId = textureId,
-      _filterQuality = filterQuality;
+  /// Creates a box backed by the texture identified by [textureId].
+  TextureBox({ @required int textureId })
+    : assert(textureId != null),
+      _textureId = textureId;
 
   /// The identity of the backend texture.
   int get textureId => _textureId;
@@ -55,17 +49,6 @@ class TextureBox extends RenderBox {
       _textureId = value;
       markNeedsPaint();
     }
-  }
-
-  /// {@macro FilterQuality}
-  FilterQuality get filterQuality => _filterQuality;
-  FilterQuality _filterQuality;
-  set filterQuality(FilterQuality value) {
-    assert(value != null);
-    if (value == _filterQuality)
-      return;
-    _filterQuality = value;
-    markNeedsPaint();
   }
 
   @override
@@ -92,7 +75,6 @@ class TextureBox extends RenderBox {
     context.addLayer(TextureLayer(
       rect: Rect.fromLTWH(offset.dx, offset.dy, size.width, size.height),
       textureId: _textureId,
-      filterQuality: _filterQuality,
     ));
   }
 }

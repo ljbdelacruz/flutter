@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:platform/platform.dart';
 import 'package:process/process.dart';
 import 'package:webkit_inspection_protocol/webkit_inspection_protocol.dart';
 
@@ -13,15 +14,11 @@ import '../base/file_system.dart';
 import '../base/io.dart';
 import '../base/logger.dart';
 import '../base/os.dart';
-import '../base/platform.dart';
 import '../convert.dart';
 import '../globals.dart' as globals;
 
-/// An environment variable used to override the location of Google Chrome.
+/// An environment variable used to override the location of chrome.
 const String kChromeEnvironment = 'CHROME_EXECUTABLE';
-
-/// An environment variable used to override the location of Microsoft Edge.
-const String kEdgeEnvironment = 'EDGE_ENVIRONMENT';
 
 /// The expected executable name on linux.
 const String kLinuxExecutable = 'google-chrome';
@@ -30,13 +27,8 @@ const String kLinuxExecutable = 'google-chrome';
 const String kMacOSExecutable =
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
-/// The expected Chrome executable name on Windows.
+/// The expected executable name on Windows.
 const String kWindowsExecutable = r'Google\Chrome\Application\chrome.exe';
-
-/// The expected Edge executable name on Windows.
-const String kWindowsEdgeExecutable = r'Microsoft\Edge\Application\msedge.exe';
-
-typedef BrowserFinder = String Function(Platform, FileSystem);
 
 /// Find the chrome executable on the current platform.
 ///
@@ -71,73 +63,43 @@ String findChromeExecutable(Platform platform, FileSystem fileSystem) {
   return null;
 }
 
-/// Find the Microsoft Edge executable on the current platform.
-///
-/// Does not verify whether the executable exists.
-String findEdgeExecutable(Platform platform, FileSystem fileSystem) {
-  if (platform.environment.containsKey(kEdgeEnvironment)) {
-    return platform.environment[kEdgeEnvironment];
-  }
-  if (platform.isWindows) {
-    /// The possible locations where the Edge executable can be located on windows.
-    final List<String> kWindowsPrefixes = <String>[
-      platform.environment['LOCALAPPDATA'],
-      platform.environment['PROGRAMFILES'],
-      platform.environment['PROGRAMFILES(X86)'],
-    ];
-    final String windowsPrefix = kWindowsPrefixes.firstWhere((String prefix) {
-      if (prefix == null) {
-        return false;
-      }
-      final String path = fileSystem.path.join(prefix, kWindowsEdgeExecutable);
-      return fileSystem.file(path).existsSync();
-    }, orElse: () => '.');
-    return fileSystem.path.join(windowsPrefix, kWindowsEdgeExecutable);
-  }
-  // Not yet supported for macOS and Linux.
-  return '';
+@visibleForTesting
+void resetChromeForTesting() {
+  ChromeLauncher._currentCompleter = Completer<Chrome>();
 }
 
-/// A launcher for Chromium browsers with devtools configured.
-class ChromiumLauncher {
-  ChromiumLauncher({
+@visibleForTesting
+void launchChromeInstance(Chrome chrome) {
+  ChromeLauncher._currentCompleter.complete(chrome);
+}
+
+/// Responsible for launching chrome with devtools configured.
+class ChromeLauncher {
+  const ChromeLauncher({
     @required FileSystem fileSystem,
     @required Platform platform,
     @required ProcessManager processManager,
     @required OperatingSystemUtils operatingSystemUtils,
     @required Logger logger,
-    @required BrowserFinder browserFinder,
   }) : _fileSystem = fileSystem,
        _platform = platform,
        _processManager = processManager,
        _operatingSystemUtils = operatingSystemUtils,
-       _logger = logger,
-       _browserFinder = browserFinder,
-       _fileSystemUtils = FileSystemUtils(
-         fileSystem: fileSystem,
-         platform: platform,
-       );
+       _logger = logger;
 
   final FileSystem _fileSystem;
   final Platform _platform;
   final ProcessManager _processManager;
   final OperatingSystemUtils _operatingSystemUtils;
-  Logger _logger;
-  final BrowserFinder _browserFinder;
-  final FileSystemUtils _fileSystemUtils;
+  final Logger _logger;
 
-  bool get hasChromeInstance => _currentCompleter.isCompleted;
+  static bool get hasChromeInstance => _currentCompleter.isCompleted;
 
-  Completer<Chromium> _currentCompleter = Completer<Chromium>();
-
-  @visibleForTesting
-  void testLaunchChromium(Chromium chromium) {
-    _currentCompleter.complete(chromium);
-  }
+  static Completer<Chrome> _currentCompleter = Completer<Chrome>();
 
   /// Whether we can locate the chrome executable.
-  bool canFindExecutable() {
-    final String chrome = _browserFinder(_platform, _fileSystem);
+  bool canFindChrome() {
+    final String chrome = findChromeExecutable(_platform, _fileSystem);
     try {
       return _processManager.canRun(chrome);
     } on ArgumentError {
@@ -145,10 +107,7 @@ class ChromiumLauncher {
     }
   }
 
-  /// The executable this launcher will use.
-  String findExecutable() =>  _browserFinder(_platform, _fileSystem);
-
-  /// Launch a Chromium browser to a particular `host` page.
+  /// Launch the chrome browser to a particular `host` page.
   ///
   /// `headless` defaults to false, and controls whether we open a headless or
   /// a `headfull` browser.
@@ -157,20 +116,13 @@ class ChromiumLauncher {
   /// port is picked automatically.
   ///
   /// `skipCheck` does not attempt to make a devtools connection before returning.
-  Future<Chromium> launch(String url, {
-    bool headless = false,
-    int debugPort,
-    bool skipCheck = false,
-    Directory cacheDir,
-  }) async {
-    _logger ??= globals.logger;
+  Future<Chrome> launch(String url, { bool headless = false, int debugPort, bool skipCheck = false, Directory cacheDir }) async {
     if (_currentCompleter.isCompleted) {
       throwToolExit('Only one instance of chrome can be started.');
     }
 
-    final String chromeExecutable = _browserFinder(_platform, _fileSystem);
-    final Directory userDataDir = _fileSystem.systemTempDirectory
-      .createTempSync('flutter_tools_chrome_device.');
+    final String chromeExecutable = findChromeExecutable(_platform, _fileSystem);
+    final Directory userDataDir = _fileSystem.systemTempDirectory.createTempSync('flutter_tools_chrome_device.');
 
     if (cacheDir != null) {
       // Seed data dir with previous state.
@@ -196,12 +148,7 @@ class ChromiumLauncher {
       '--disable-default-apps',
       '--disable-translate',
       if (headless)
-        ...<String>[
-          '--headless',
-          '--disable-gpu',
-          '--no-sandbox',
-          '--window-size=2400,1800',
-        ],
+        ...<String>['--headless', '--disable-gpu', '--no-sandbox', '--window-size=2400,1800'],
       url,
     ];
 
@@ -233,13 +180,12 @@ class ChromiumLauncher {
         return 'Failed to spawn stderr';
       });
     final Uri remoteDebuggerUri = await _getRemoteDebuggerUrl(Uri.parse('http://localhost:$port'));
-    return _connect(Chromium._(
+    return _connect(Chrome._(
       port,
       ChromeConnection('localhost', port),
       url: url,
       process: process,
       remoteDebuggerUri: remoteDebuggerUri,
-      chromiumLauncher: this,
     ), skipCheck);
   }
 
@@ -271,7 +217,7 @@ class ChromiumLauncher {
 
     if (sourceLocalStorageDir.existsSync()) {
       targetLocalStorageDir.createSync(recursive: true);
-      _fileSystemUtils.copyDirectorySync(sourceLocalStorageDir, targetLocalStorageDir);
+      globals.fsUtils.copyDirectorySync(sourceLocalStorageDir, targetLocalStorageDir);
     }
   }
 
@@ -290,11 +236,11 @@ class ChromiumLauncher {
 
     if (sourceLocalStorageDir.existsSync()) {
       targetLocalStorageDir.createSync(recursive: true);
-      _fileSystemUtils.copyDirectorySync(sourceLocalStorageDir, targetLocalStorageDir);
+      globals.fsUtils.copyDirectorySync(sourceLocalStorageDir, targetLocalStorageDir);
     }
   }
 
-  Future<Chromium> _connect(Chromium chrome, bool skipCheck) async {
+  static Future<Chrome> _connect(Chrome chrome, bool skipCheck) async {
     // The connection is lazy. Try a simple call to make sure the provided
     // connection is valid.
     if (!skipCheck) {
@@ -310,7 +256,7 @@ class ChromiumLauncher {
     return chrome;
   }
 
-  Future<Chromium> get connectedInstance => _currentCompleter.future;
+  static Future<Chrome> get connectedInstance => _currentCompleter.future;
 
   /// Returns the full URL of the Chrome remote debugger for the main page.
   ///
@@ -335,30 +281,27 @@ class ChromiumLauncher {
   }
 }
 
-/// A class for managing an instance of a Chromium browser.
-class Chromium {
-  Chromium._(
+/// A class for managing an instance of Chrome.
+class Chrome {
+  Chrome._(
     this.debugPort,
     this.chromeConnection, {
     this.url,
     Process process,
     this.remoteDebuggerUri,
-    @required ChromiumLauncher chromiumLauncher,
-  })  : _process = process,
-        _chromiumLauncher = chromiumLauncher;
+  })  : _process = process;
 
   final String url;
   final int debugPort;
   final Process _process;
   final ChromeConnection chromeConnection;
   final Uri remoteDebuggerUri;
-  final ChromiumLauncher _chromiumLauncher;
 
   Future<int> get onExit => _process.exitCode;
 
   Future<void> close() async {
-    if (_chromiumLauncher.hasChromeInstance) {
-      _chromiumLauncher._currentCompleter = Completer<Chromium>();
+    if (ChromeLauncher.hasChromeInstance) {
+      ChromeLauncher._currentCompleter = Completer<Chrome>();
     }
     chromeConnection.close();
     _process?.kill();

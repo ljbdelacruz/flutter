@@ -58,6 +58,11 @@ void _useCanvasText(bool useCanvasText) {
   );
 }
 
+typedef OnBenchmark = void Function(String name, num value);
+void _onBenchmark(OnBenchmark listener) {
+  js_util.setProperty(html.window, '_flutter_internal_on_benchmark', listener);
+}
+
 /// Repeatedly lays out a paragraph using the DOM measurement approach.
 ///
 /// Creates a different paragraph each time in order to avoid hitting the cache.
@@ -127,21 +132,21 @@ class BenchTextLayout extends RawRecorder {
   }) {
     profile.record('$keyPrefix.layout', () {
       paragraph.layout(ui.ParagraphConstraints(width: maxWidth));
-    }, reported: true);
+    });
     profile.record('$keyPrefix.getBoxesForRange', () {
       for (int start = 0; start < text.length; start += 3) {
         for (int end = start + 1; end < text.length; end *= 2) {
           paragraph.getBoxesForRange(start, end);
         }
       }
-    }, reported: true);
+    });
     profile.record('$keyPrefix.getPositionForOffset', () {
       for (double dx = 0.0; dx < paragraph.width; dx += 10.0) {
         for (double dy = 0.0; dy < paragraph.height; dy += 10.0) {
           paragraph.getPositionForOffset(Offset(dx, dy));
         }
       }
-    }, reported: true);
+    });
   }
 }
 
@@ -174,7 +179,7 @@ class BenchTextCachedLayout extends RawRecorder {
     final ui.Paragraph paragraph = builder.build();
     profile.record('layout', () {
       paragraph.layout(const ui.ParagraphConstraints(width: double.infinity));
-    }, reported: true);
+    });
     _useCanvasText(null);
   }
 }
@@ -186,66 +191,33 @@ class BenchTextCachedLayout extends RawRecorder {
 /// build are unique.
 int _counter = 0;
 
-/// Which mode to run [BenchBuildColorsGrid] in.
-enum _TestMode {
-  /// Uses the HTML rendering backend with the canvas 2D text layout.
-  useCanvasTextLayout,
-
-  /// Uses the HTML rendering backend with the DOM text layout.
-  useDomTextLayout,
-
-  /// Uses CanvasKit for everything.
-  useCanvasKit,
-}
-
-/// Measures how expensive it is to construct a realistic text-heavy piece of UI.
+/// Measures how expensive it is to construct material checkboxes.
 ///
-/// The benchmark constructs a tabbed view, where each tab displays a list of
-/// colors. Each color's description is made of several [Text] nodes.
+/// Creates a 10x10 grid of tristate checkboxes.
 class BenchBuildColorsGrid extends WidgetBuildRecorder {
-  BenchBuildColorsGrid.canvas()
-      : mode = _TestMode.useCanvasTextLayout, super(name: canvasBenchmarkName);
-  BenchBuildColorsGrid.dom()
-      : mode = _TestMode.useDomTextLayout, super(name: domBenchmarkName);
-  BenchBuildColorsGrid.canvasKit()
-      : mode = _TestMode.useCanvasKit, super(name: canvasKitBenchmarkName);
-
-  /// Disables tracing for this benchmark.
-  ///
-  /// When tracing is enabled, DOM layout takes longer to complete. This has a
-  /// significant effect on the benchmark since we do a lot of text layout
-  /// operations that trigger synchronous DOM layout.
-  ///
-  /// Tracing has a negative effect only in [_TestMode.useDomTextLayout] mode.
-  @override
-  bool get isTracingEnabled => false;
+  BenchBuildColorsGrid({@required this.useCanvas})
+      : super(name: useCanvas ? canvasBenchmarkName : domBenchmarkName);
 
   static const String domBenchmarkName = 'text_dom_color_grid';
   static const String canvasBenchmarkName = 'text_canvas_color_grid';
-  static const String canvasKitBenchmarkName = 'text_canvas_kit_color_grid';
 
   /// Whether to use the new canvas-based text measurement implementation.
-  final _TestMode mode;
+  final bool useCanvas;
 
   num _textLayoutMicros = 0;
 
   @override
-  Future<void> setUpAll() async {
-    if (mode == _TestMode.useCanvasTextLayout) {
-      _useCanvasText(true);
-    }
-    if (mode == _TestMode.useDomTextLayout) {
-      _useCanvasText(false);
-    }
-    registerEngineBenchmarkValueListener('text_layout', (num value) {
+  void setUpAll() {
+    _useCanvasText(useCanvas);
+    _onBenchmark((String name, num value) {
       _textLayoutMicros += value;
     });
   }
 
   @override
-  Future<void> tearDownAll() async {
+  void tearDownAll() {
     _useCanvasText(null);
-    stopListeningToEngineBenchmarkValues('text_layout');
+    _onBenchmark(null);
   }
 
   @override
@@ -258,12 +230,10 @@ class BenchBuildColorsGrid extends WidgetBuildRecorder {
   void frameDidDraw() {
     // We need to do this before calling [super.frameDidDraw] because the latter
     // updates the value of [showWidget] in preparation for the next frame.
-    // TODO(yjbanov): https://github.com/flutter/flutter/issues/53877
-    if (showWidget && mode != _TestMode.useCanvasKit) {
+    if (showWidget) {
       profile.addDataPoint(
         'text_layout',
         Duration(microseconds: _textLayoutMicros.toInt()),
-        reported: true,
       );
     }
     super.frameDidDraw();

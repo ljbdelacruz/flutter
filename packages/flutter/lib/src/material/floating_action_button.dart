@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -144,7 +142,6 @@ class FloatingActionButton extends StatelessWidget {
     this.highlightElevation,
     this.disabledElevation,
     @required this.onPressed,
-    this.mouseCursor,
     this.mini = false,
     this.shape,
     this.clipBehavior = Clip.none,
@@ -185,7 +182,6 @@ class FloatingActionButton extends StatelessWidget {
     this.highlightElevation,
     this.disabledElevation,
     @required this.onPressed,
-    this.mouseCursor = SystemMouseCursors.click,
     this.shape,
     this.isExtended = true,
     this.materialTapTargetSize,
@@ -291,9 +287,6 @@ class FloatingActionButton extends StatelessWidget {
   ///
   /// If this is set to null, the button will be disabled.
   final VoidCallback onPressed;
-
-  /// {@macro flutter.material.button.mouseCursor}
-  final MouseCursor mouseCursor;
 
   /// The z-coordinate at which to place this button relative to its parent.
   ///
@@ -491,7 +484,6 @@ class FloatingActionButton extends StatelessWidget {
 
     Widget result = RawMaterialButton(
       onPressed: onPressed,
-      mouseCursor: mouseCursor,
       elevation: elevation,
       focusElevation: focusElevation,
       hoverElevation: hoverElevation,

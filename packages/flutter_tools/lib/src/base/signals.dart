@@ -4,27 +4,30 @@
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
-
 import 'async_guard.dart';
+import 'context.dart';
 import 'io.dart';
 
 typedef SignalHandler = FutureOr<void> Function(ProcessSignal signal);
+
+Signals get signals => Signals.instance;
+
+// The default list of signals that should cause the process to exit.
+const List<ProcessSignal> _defaultExitSignals = <ProcessSignal>[
+  ProcessSignal.SIGTERM,
+  ProcessSignal.SIGINT,
+  ProcessSignal.SIGKILL,
+];
 
 /// A class that manages signal handlers
 ///
 /// Signal handlers are run in the order that they were added.
 abstract class Signals {
-  @visibleForTesting
-  factory Signals.test({
-    List<ProcessSignal> exitSignals = defaultExitSignals,
-  }) => LocalSignals._(exitSignals);
+  factory Signals({
+    List<ProcessSignal> exitSignals = _defaultExitSignals,
+  }) => _DefaultSignals._(exitSignals);
 
-  // The default list of signals that should cause the process to exit.
-  static const List<ProcessSignal> defaultExitSignals = <ProcessSignal>[
-    ProcessSignal.SIGTERM,
-    ProcessSignal.SIGINT,
-  ];
+  static Signals get instance => context.get<Signals>();
 
   /// Adds a signal handler to run on receipt of signal.
   ///
@@ -45,17 +48,8 @@ abstract class Signals {
   Stream<Object> get errors;
 }
 
-/// A class that manages the real dart:io signal handlers.
-///
-/// We use a singleton instance of this class to ensure that all handlers for
-/// fatal signals run before this class calls exit().
-class LocalSignals implements Signals {
-  LocalSignals._(this.exitSignals);
-
-  static LocalSignals _instance;
-  static LocalSignals get instance => _instance ??= LocalSignals._(
-    Signals.defaultExitSignals,
-  );
+class _DefaultSignals implements Signals {
+  _DefaultSignals._(this.exitSignals);
 
   final List<ProcessSignal> exitSignals;
 
@@ -90,13 +84,7 @@ class LocalSignals implements Signals {
     // If we added the first one, then call signal.watch(), listen, and cache
     // the stream controller.
     if (_handlersList[signal].length == 1) {
-      _streamSubscriptions[signal] = signal.watch().listen(
-        _handleSignal,
-        onError: (Object e) {
-          _handlersTable[signal].remove(token);
-          _handlersList[signal].remove(handler);
-        },
-      );
+      _streamSubscriptions[signal] = signal.watch().listen(_handleSignal);
     }
     return token;
   }
@@ -111,10 +99,7 @@ class LocalSignals implements Signals {
     if (!_handlersTable[signal].containsKey(token)) {
       return false;
     }
-    final SignalHandler handler = _handlersTable[signal].remove(token);
-    if (handler == null) {
-      return false;
-    }
+    final SignalHandler handler = _handlersTable[signal][token];
     final bool removed = _handlersList[signal].remove(handler);
     if (!removed) {
       return false;

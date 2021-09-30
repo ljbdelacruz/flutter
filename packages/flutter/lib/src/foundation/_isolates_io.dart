@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:developer';
 import 'dart:isolate';
@@ -18,7 +16,6 @@ Future<R> compute<Q, R>(isolates.ComputeCallback<Q, R> callback, Q message, { St
   final Flow flow = Flow.begin();
   Timeline.startSync('$debugLabel: start', flow: flow);
   final ReceivePort resultPort = ReceivePort();
-  final ReceivePort exitPort = ReceivePort();
   final ReceivePort errorPort = ReceivePort();
   Timeline.finishSync();
   final Isolate isolate = await Isolate.spawn<_IsolateConfiguration<Q, FutureOr<R>>>(
@@ -31,7 +28,7 @@ Future<R> compute<Q, R>(isolates.ComputeCallback<Q, R> callback, Q message, { St
       flow.id,
     ),
     errorsAreFatal: true,
-    onExit: exitPort.sendPort,
+    onExit: resultPort.sendPort,
     onError: errorPort.sendPort,
   );
   final Completer<R> result = Completer<R>();
@@ -46,13 +43,8 @@ Future<R> compute<Q, R>(isolates.ComputeCallback<Q, R> callback, Q message, { St
       result.completeError(exception, stack);
     }
   });
-  exitPort.listen((dynamic exitData) {
-    if (!result.isCompleted) {
-      result.completeError(Exception('Isolate exited without result or error.'));
-    }
-  });
   resultPort.listen((dynamic resultData) {
-    assert(resultData is R);
+    assert(resultData == null || resultData is R);
     if (!result.isCompleted)
       result.complete(resultData as R);
   });
@@ -84,11 +76,12 @@ class _IsolateConfiguration<Q, R> {
 }
 
 Future<void> _spawn<Q, R>(_IsolateConfiguration<Q, FutureOr<R>> configuration) async {
-  final R result = await Timeline.timeSync(
+  R result;
+  await Timeline.timeSync(
     configuration.debugLabel,
     () async {
       final FutureOr<R> applicationResult = await configuration.apply();
-      return await applicationResult;
+      result = await applicationResult;
     },
     flow: Flow.step(configuration.flowId),
   );

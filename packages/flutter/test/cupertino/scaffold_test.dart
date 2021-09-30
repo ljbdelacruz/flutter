@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -161,7 +159,7 @@ void main() {
     expect(tester.getSize(find.byType(Container)).height, 600.0);
   });
 
-  testWidgets('Contents bottom padding are not consumed by viewInsets when resizeToAvoidBottomInset overridden', (WidgetTester tester) async {
+  testWidgets('Contents bottom padding are not consumed by viewInsets when resizeToAvoidBottomInset overriden', (WidgetTester tester) async {
     const Widget child = CupertinoPageScaffold(
       resizeToAvoidBottomInset: false,
       navigationBar: CupertinoNavigationBar(
@@ -238,7 +236,7 @@ void main() {
   });
 
   testWidgets('Contents have automatic sliver padding between translucent bars', (WidgetTester tester) async {
-    const SizedBox content = SizedBox(height: 600.0, width: 600.0);
+    final Container content = Container(height: 600.0, width: 600.0);
 
     await tester.pumpWidget(
       CupertinoApp(
@@ -266,7 +264,7 @@ void main() {
                       middle: Text('Title'),
                     ),
                     child: ListView(
-                      children: const <Widget>[
+                      children: <Widget>[
                         content,
                       ],
                     ),

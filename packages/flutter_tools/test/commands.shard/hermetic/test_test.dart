@@ -164,8 +164,6 @@ class FakeFlutterTestRunner implements FlutterTestRunner {
     Directory workDir,
     List<String> names = const <String>[],
     List<String> plainNames = const <String>[],
-    String tags,
-    String excludeTags,
     bool enableObservatory = false,
     bool startPaused = false,
     bool disableServiceAuthCodes = false,
@@ -184,7 +182,6 @@ class FakeFlutterTestRunner implements FlutterTestRunner {
     Directory coverageDirectory,
     bool web = false,
     String randomSeed,
-    @override List<String> extraFrontEndOptions,
   }) async {
     lastEnableObservatoryValue = enableObservatory;
     return exitCode;

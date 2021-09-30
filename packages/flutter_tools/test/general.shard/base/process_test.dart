@@ -4,14 +4,13 @@
 
 import 'dart:async';
 
+import 'package:platform/platform.dart';
 import 'package:flutter_tools/src/base/io.dart';
 import 'package:flutter_tools/src/base/logger.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/base/process.dart';
 import 'package:flutter_tools/src/base/terminal.dart';
 import 'package:mockito/mockito.dart';
 import 'package:process/process.dart';
-import 'package:quiver/testing/async.dart';
 
 import '../../src/common.dart';
 import '../../src/context.dart';
@@ -86,7 +85,7 @@ void main() {
       mockLogger = BufferLogger(
         terminal: AnsiTerminal(
           stdio: MockStdio(),
-          platform: FakePlatform(stdoutSupportsAnsi: false),
+          platform: FakePlatform.fromPlatform(const LocalPlatform())..stdoutSupportsAnsi = false,
         ),
         outputPreferences: OutputPreferences(wrapText: true, wrapColumn: 40),
       );
@@ -161,7 +160,7 @@ void main() {
              throwsA(isA<ProcessException>()));
     });
 
-    testWithoutContext(' does not throw on allowed Failures', () async {
+    testWithoutContext(' does not throw on failure with whitelist', () async {
       when(mockProcessManager.run(<String>['kaboom'])).thenAnswer((_) {
         return Future<ProcessResult>.value(ProcessResult(0, 1, '', ''));
       });
@@ -169,13 +168,13 @@ void main() {
         (await processUtils.run(
           <String>['kaboom'],
           throwOnError: true,
-          allowedFailures: (int c) => c == 1,
+          whiteListFailures: (int c) => c == 1,
         )).exitCode,
         1,
       );
     });
 
-    testWithoutContext(' throws on disallowed failure', () async {
+    testWithoutContext(' throws on failure when not in whitelist', () async {
       when(mockProcessManager.run(<String>['kaboom'])).thenAnswer((_) {
         return Future<ProcessResult>.value(ProcessResult(0, 2, '', ''));
       });
@@ -183,7 +182,7 @@ void main() {
         () => processUtils.run(
           <String>['kaboom'],
           throwOnError: true,
-          allowedFailures: (int c) => c == 1,
+          whiteListFailures: (int c) => c == 1,
         ),
         throwsA(isA<ProcessException>()),
       );
@@ -194,16 +193,11 @@ void main() {
         flakes: 1,
         delay: delay,
       );
-
-      FakeAsync().run((FakeAsync time) async {
-        final Duration timeout = delay + const Duration(seconds: 1);
-        final RunResult result = await flakyProcessUtils.run(
-          <String>['dummy'],
-          timeout: timeout,
-        );
-        time.elapse(timeout);
-        expect(result.exitCode, -9);
-      });
+      final RunResult result = await flakyProcessUtils.run(
+        <String>['dummy'],
+        timeout: delay + const Duration(seconds: 1),
+      );
+      expect(result.exitCode, -9);
     });
 
     testWithoutContext(' flaky process succeeds with retry', () async {
@@ -211,16 +205,12 @@ void main() {
         flakes: 1,
         delay: delay,
       );
-      FakeAsync().run((FakeAsync time) async {
-        final Duration timeout = delay - const Duration(milliseconds: 500);
-        final RunResult result = await flakyProcessUtils.run(
-          <String>['dummy'],
-          timeout: timeout,
-          timeoutRetries: 1,
-        );
-        time.elapse(timeout);
-        expect(result.exitCode, 0);
-      });
+      final RunResult result = await flakyProcessUtils.run(
+        <String>['dummy'],
+        timeout: delay - const Duration(milliseconds: 500),
+        timeoutRetries: 1,
+      );
+      expect(result.exitCode, 0);
     });
 
     testWithoutContext(' flaky process generates ProcessException on timeout', () async {
@@ -240,15 +230,11 @@ void main() {
         flakyStdout.complete(<int>[]);
         return true;
       });
-      FakeAsync().run((FakeAsync time) async {
-        final Duration timeout = delay - const Duration(milliseconds: 500);
-        expect(() => flakyProcessUtils.run(
-          <String>['dummy'],
-          timeout: timeout,
-          timeoutRetries: 0,
-        ), throwsA(isA<ProcessException>()));
-        time.elapse(timeout);
-      });
+      expect(() => flakyProcessUtils.run(
+        <String>['dummy'],
+        timeout: delay - const Duration(milliseconds: 500),
+        timeoutRetries: 0,
+      ), throwsA(isA<ProcessException>()));
     });
   });
 
@@ -262,7 +248,7 @@ void main() {
       testLogger = BufferLogger(
         terminal: AnsiTerminal(
           stdio: MockStdio(),
-          platform: FakePlatform(stdinSupportsAnsi: false),
+          platform: FakePlatform.fromPlatform(const LocalPlatform())..stdoutSupportsAnsi = false,
         ),
         outputPreferences: OutputPreferences(wrapText: true, wrapColumn: 40),
       );
@@ -294,7 +280,7 @@ void main() {
              throwsA(isA<ProcessException>()));
     });
 
-    testWithoutContext(' does not throw on allowed Failures', () async {
+    testWithoutContext(' does not throw on failure with whitelist', () async {
       when(mockProcessManager.runSync(<String>['kaboom'])).thenReturn(
         ProcessResult(0, 1, '', '')
       );
@@ -302,12 +288,12 @@ void main() {
         processUtils.runSync(
           <String>['kaboom'],
           throwOnError: true,
-          allowedFailures: (int c) => c == 1,
+          whiteListFailures: (int c) => c == 1,
         ).exitCode,
         1);
     });
 
-    testWithoutContext(' throws on disallowed failure', () async {
+    testWithoutContext(' throws on failure when not in whitelist', () async {
       when(mockProcessManager.runSync(<String>['kaboom'])).thenReturn(
         ProcessResult(0, 2, '', '')
       );
@@ -315,7 +301,7 @@ void main() {
         () => processUtils.runSync(
           <String>['kaboom'],
           throwOnError: true,
-          allowedFailures: (int c) => c == 1,
+          whiteListFailures: (int c) => c == 1,
         ),
         throwsA(isA<ProcessException>()));
     });

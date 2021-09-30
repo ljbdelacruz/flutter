@@ -19,7 +19,7 @@ void main() {
             width: 400.0,
             child: Row(
               children: <Widget>[
-                const Icon(Icons.message),
+                Icon(Icons.message),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,

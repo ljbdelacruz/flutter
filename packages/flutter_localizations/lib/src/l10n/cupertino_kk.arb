@@ -18,7 +18,5 @@
   "cutButtonLabel": "Қию",
   "copyButtonLabel": "Көшіру",
   "pasteButtonLabel": "Қою",
-  "selectAllButtonLabel": "Барлығын таңдау",
-  "tabSemanticsLabel": "Қойынды: $tabIndex/$tabCount",
-  "modalBarrierDismissLabel": "Жабу"
+  "selectAllButtonLabel": "Барлығын таңдау"
 }

@@ -23,7 +23,5 @@
   "cutButtonLabel": "Decupați",
   "copyButtonLabel": "Copiați",
   "pasteButtonLabel": "Inserați",
-  "selectAllButtonLabel": "Selectați-le pe toate",
-  "tabSemanticsLabel": "Fila $tabIndex din $tabCount",
-  "modalBarrierDismissLabel": "Închideți"
+  "selectAllButtonLabel": "Selectați-le pe toate"
 }

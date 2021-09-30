@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 /// Widgets that handle interaction with asynchronous computations.
 ///
 /// Asynchronous computations are represented by [Future]s and [Stream]s.
@@ -473,9 +471,6 @@ class StreamBuilder<T> extends StreamBuilderBase<T, AsyncSnapshot<T>> {
        super(key: key, stream: stream);
 
   /// The build strategy currently used by this builder.
-  ///
-  /// This builder must only return a widget and should not have any side
-  /// effects as it may be called multiple times.
   final AsyncWidgetBuilder<T> builder;
 
   /// The data that will be used to create the initial snapshot.
@@ -650,7 +645,7 @@ class StreamBuilder<T> extends StreamBuilderBase<T, AsyncSnapshot<T>> {
 /// }
 /// ```
 /// {@end-tool}
-// TODO(ianh): remove unreachable code above once https://github.com/dart-lang/sdk/issues/35520 is fixed
+// TODO(ianh): remove unreachable code above once https://github.com/dart-lang/linter/issues/1141 is fixed
 class FutureBuilder<T> extends StatefulWidget {
   /// Creates a widget that builds itself based on the latest snapshot of
   /// interaction with a [Future].
@@ -691,9 +686,6 @@ class FutureBuilder<T> extends StatefulWidget {
   ///    the value to which the future completed. If it completed with an error,
   ///    [AsyncSnapshot.hasError] will be true and [AsyncSnapshot.error] will be
   ///    set to the error object.
-  ///
-  /// This builder must only return a widget and should not have any side
-  /// effects as it may be called multiple times.
   final AsyncWidgetBuilder<T> builder;
 
   /// The data that will be used to create the snapshots provided until a

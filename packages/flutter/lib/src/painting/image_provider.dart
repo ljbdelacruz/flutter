@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -162,15 +160,13 @@ class ImageConfiguration {
 
 /// Performs the decode process for use in [ImageProvider.load].
 ///
-/// This callback allows decoupling of the `cacheWidth`, `cacheHeight`, and
-/// `allowUpscaling` parameters from implementations of [ImageProvider] that do
-/// not expose them.
+/// This callback allows decoupling of the `cacheWidth` and `cacheHeight`
+/// parameters from implementations of [ImageProvider] that do not use them.
 ///
 /// See also:
 ///
-///  * [ResizeImage], which uses this to override the `cacheWidth`,
-///    `cacheHeight`, and `allowUpscaling` parameters.
-typedef DecoderCallback = Future<ui.Codec> Function(Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling});
+///  * [ResizeImage], which uses this to override the `cacheWidth` and `cacheHeight` parameters.
+typedef DecoderCallback = Future<ui.Codec> Function(Uint8List bytes, {int cacheWidth, int cacheHeight});
 
 /// Identifies an image without committing to the precise final asset. This
 /// allows a set of images to be identified and for the precise image to later
@@ -351,10 +347,10 @@ abstract class ImageProvider<T> {
           stack: stack,
           context: ErrorDescription('while resolving an image'),
           silent: true, // could be a network error or whatnot
-          informationCollector: collector,
-        );
-      },
-    );
+          informationCollector: collector
+          );
+        },
+      );
     return stream;
   }
 
@@ -651,7 +647,6 @@ abstract class AssetBundleImageProvider extends ImageProvider<AssetBundleImageKe
     return MultiFrameImageStreamCompleter(
       codec: _loadAsync(key, decode),
       scale: key.scale,
-      debugLabel: key.name,
       informationCollector: collector
     );
   }
@@ -679,7 +674,6 @@ abstract class AssetBundleImageProvider extends ImageProvider<AssetBundleImageKe
   }
 }
 
-@immutable
 class _SizeAwareCacheKey {
   const _SizeAwareCacheKey(this.providerCacheKey, this.width, this.height);
 
@@ -721,9 +715,7 @@ class ResizeImage extends ImageProvider<_SizeAwareCacheKey> {
     this.imageProvider, {
     this.width,
     this.height,
-    this.allowUpscaling = false,
-  }) : assert(width != null || height != null),
-       assert(allowUpscaling != null);
+  }) : assert(width != null || height != null);
 
   /// The [ImageProvider] that this class wraps.
   final ImageProvider imageProvider;
@@ -733,15 +725,6 @@ class ResizeImage extends ImageProvider<_SizeAwareCacheKey> {
 
   /// The height the image should decode to and cache.
   final int height;
-
-  /// Whether the [width] and [height] parameters should be clamped to the
-  /// intrinsic width and height of the image.
-  ///
-  /// In general, it is better for memory usage to avoid scaling the image
-  /// beyond its intrinsic dimensions when decoding it. If there is a need to
-  /// scale an image larger, it is better to apply a scale to the canvas, or
-  /// to use an appropriate [Image.fit].
-  final bool allowUpscaling;
 
   /// Composes the `provider` in a [ResizeImage] only when `cacheWidth` and
   /// `cacheHeight` are not both null.
@@ -757,19 +740,14 @@ class ResizeImage extends ImageProvider<_SizeAwareCacheKey> {
 
   @override
   ImageStreamCompleter load(_SizeAwareCacheKey key, DecoderCallback decode) {
-    final DecoderCallback decodeResize = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) {
+    final DecoderCallback decodeResize = (Uint8List bytes, {int cacheWidth, int cacheHeight}) {
       assert(
-        cacheWidth == null && cacheHeight == null && allowUpscaling == null,
-        'ResizeImage cannot be composed with another ImageProvider that applies '
-        'cacheWidth, cacheHeight, or allowUpscaling.'
+        cacheWidth == null && cacheHeight == null,
+        'ResizeImage cannot be composed with another ImageProvider that applies cacheWidth or cacheHeight.'
       );
-      return decode(bytes, cacheWidth: width, cacheHeight: height, allowUpscaling: this.allowUpscaling);
+      return decode(bytes, cacheWidth: width, cacheHeight: height);
     };
-    final ImageStreamCompleter completer = imageProvider.load(key.providerCacheKey, decodeResize);
-    if (!kReleaseMode) {
-      completer.debugLabel = '${completer.debugLabel} - Resized(${key.width}×${key.height})';
-    }
-    return completer;
+    return imageProvider.load(key.providerCacheKey, decodeResize);
   }
 
   @override
@@ -840,7 +818,6 @@ abstract class NetworkImage extends ImageProvider<NetworkImage> {
 /// See also:
 ///
 ///  * [Image.file] for a shorthand of an [Image] widget backed by [FileImage].
-@immutable
 class FileImage extends ImageProvider<FileImage> {
   /// Creates an object that decodes a [File] as an image.
   ///
@@ -865,7 +842,6 @@ class FileImage extends ImageProvider<FileImage> {
     return MultiFrameImageStreamCompleter(
       codec: _loadAsync(key, decode),
       scale: key.scale,
-      debugLabel: key.file.path,
       informationCollector: () sync* {
         yield ErrorDescription('Path: ${file?.path}');
       },
@@ -914,7 +890,6 @@ class FileImage extends ImageProvider<FileImage> {
 /// See also:
 ///
 ///  * [Image.memory] for a shorthand of an [Image] widget backed by [MemoryImage].
-@immutable
 class MemoryImage extends ImageProvider<MemoryImage> {
   /// Creates an object that decodes a [Uint8List] buffer as an image.
   ///
@@ -939,7 +914,6 @@ class MemoryImage extends ImageProvider<MemoryImage> {
     return MultiFrameImageStreamCompleter(
       codec: _loadAsync(key, decode),
       scale: key.scale,
-      debugLabel: 'MemoryImage(${describeIdentity(key.bytes)})',
     );
   }
 
@@ -1034,7 +1008,6 @@ class MemoryImage extends ImageProvider<MemoryImage> {
 ///
 ///  * [Image.asset] for a shorthand of an [Image] widget backed by
 ///    [ExactAssetImage] when using a scale.
-@immutable
 class ExactAssetImage extends AssetBundleImageProvider {
   /// Creates an object that fetches the given image from an asset bundle.
   ///

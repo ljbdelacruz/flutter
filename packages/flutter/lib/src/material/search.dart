@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -121,7 +119,6 @@ abstract class SearchDelegate<T> {
   /// {@end-tool}
   SearchDelegate({
     this.searchFieldLabel,
-    this.searchFieldStyle,
     this.keyboardType,
     this.textInputAction = TextInputAction.search,
   });
@@ -267,11 +264,6 @@ abstract class SearchDelegate<T> {
   /// If this value is set to null, the value of MaterialLocalizations.of(context).searchFieldLabel will be used instead.
   final String searchFieldLabel;
 
-  /// The style of the [searchFieldLabel].
-  ///
-  /// If this value is set to null, the value of the ambient [Theme]'s [ThemeData.inputDecorationTheme.hintStyle] will be used instead.
-  final TextStyle searchFieldStyle;
-
   /// The type of action button to use for the keyboard.
   ///
   /// Defaults to the default value specified in [TextField].
@@ -323,6 +315,7 @@ enum _SearchBody {
   results,
 }
 
+
 class _SearchPageRoute<T> extends PageRoute<T> {
   _SearchPageRoute({
     @required this.delegate,
@@ -331,7 +324,7 @@ class _SearchPageRoute<T> extends PageRoute<T> {
       delegate._route == null,
       'The ${delegate.runtimeType} instance is currently used by another active '
       'search. Please close that search by calling close() on the SearchDelegate '
-      'before opening another search with the same delegate instance.',
+      'before openening another search with the same delegate instance.',
     );
     delegate._route = this;
   }
@@ -476,8 +469,6 @@ class _SearchPageState<T> extends State<_SearchPage<T>> {
     final ThemeData theme = widget.delegate.appBarTheme(context);
     final String searchFieldLabel = widget.delegate.searchFieldLabel
       ?? MaterialLocalizations.of(context).searchFieldLabel;
-    final TextStyle searchFieldStyle = widget.delegate.searchFieldStyle
-      ?? theme.inputDecorationTheme.hintStyle;
     Widget body;
     switch(widget.delegate._currentBody) {
       case _SearchBody.suggestions:
@@ -530,7 +521,7 @@ class _SearchPageState<T> extends State<_SearchPage<T>> {
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: searchFieldLabel,
-              hintStyle: searchFieldStyle,
+              hintStyle: theme.inputDecorationTheme.hintStyle,
             ),
           ),
           actions: widget.delegate.buildActions(context),

@@ -43,14 +43,14 @@ void main() {
                   },
                   itemBuilder: (BuildContext context) {
                     return <PopupMenuItem<int>>[
-                      const PopupMenuItem<int>(
+                      PopupMenuItem<int>(
                         value: 1,
                         child: Text(
                           'hello, world',
                           style: TextStyle(color: Colors.blue),
                         ),
                       ),
-                      const PopupMenuItem<int>(
+                      PopupMenuItem<int>(
                         value: 2,
                         child: Text(
                           '你好，世界',
@@ -129,14 +129,14 @@ void main() {
                   },
                   itemBuilder: (BuildContext context) {
                     return <PopupMenuItem<int>>[
-                      const PopupMenuItem<int>(
+                      PopupMenuItem<int>(
                         value: 1,
                         child: Text(
                           'hello, world',
                           style: TextStyle(color: Colors.blue),
                         ),
                       ),
-                      const PopupMenuItem<int>(
+                      PopupMenuItem<int>(
                         value: 2,
                         child: Text(
                           '你好，世界',

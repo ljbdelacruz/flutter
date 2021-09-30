@@ -22,7 +22,7 @@ void main() {
 
     setUp(() {
       Cache.disableLocking();
-      mockStdio = MockStdio()..stdout.terminalColumns = 80;
+      mockStdio = MockStdio();
     });
 
     testUsingContext('generates bash initialization script to stdout', () async {

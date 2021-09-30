@@ -15,7 +15,7 @@ import 'macos_workflow.dart';
 /// A device that represents a desktop MacOS target.
 class MacOSDevice extends DesktopDevice {
   MacOSDevice() : super(
-      'macos',
+      'macOS',
       platformType: PlatformType.macos,
       ephemeral: false,
   );
@@ -44,7 +44,6 @@ class MacOSDevice extends DesktopDevice {
       flutterProject: FlutterProject.current(),
       buildInfo: buildInfo,
       targetOverride: mainPath,
-      verboseLogging: globals.logger.isVerbose,
     );
   }
 

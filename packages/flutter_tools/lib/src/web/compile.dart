@@ -10,10 +10,9 @@ import '../base/file_system.dart';
 import '../base/logger.dart';
 import '../build_info.dart';
 import '../build_system/build_system.dart';
-import '../build_system/targets/common.dart';
+import '../build_system/targets/dart.dart';
 import '../build_system/targets/icon_tree_shaker.dart';
 import '../build_system/targets/web.dart';
-import '../cache.dart';
 import '../globals.dart' as globals;
 import '../platform_plugins.dart';
 import '../plugins.dart';
@@ -32,14 +31,14 @@ Future<void> buildWeb(
   if (!flutterProject.web.existsSync()) {
     throwToolExit('Missing index.html.');
   }
-  final bool hasWebPlugins = (await findPlugins(flutterProject))
+  final bool hasWebPlugins = findPlugins(flutterProject)
     .any((Plugin p) => p.platforms.containsKey(WebPlugin.kConfigKey));
   await injectPlugins(flutterProject, checkProjects: true);
   final Status status = globals.logger.startProgress('Compiling $target for the Web...', timeout: null);
   final Stopwatch sw = Stopwatch()..start();
   try {
-    final BuildResult result = await globals.buildSystem.build(const WebServiceWorker(), Environment(
-      projectDir: globals.fs.currentDirectory,
+    final BuildResult result = await globals.buildSystem.build(const WebServiceWorker(), Environment.test(
+      globals.fs.currentDirectory,
       outputDir: globals.fs.directory(getWebBuildDirectory()),
       buildDir: flutterProject.directory
         .childDirectory('.dart_tool')
@@ -49,21 +48,14 @@ Future<void> buildWeb(
         kTargetFile: target,
         kInitializePlatform: initializePlatform.toString(),
         kHasWebPlugins: hasWebPlugins.toString(),
-        kDartDefines: encodeDartDefines(buildInfo.dartDefines),
+        kDartDefines: buildInfo.dartDefines.join(','),
         kCspMode: csp.toString(),
         kIconTreeShakerFlag: buildInfo.treeShakeIcons.toString(),
-        if (buildInfo.extraFrontEndOptions?.isNotEmpty ?? false)
-          kExtraFrontEndOptions: encodeDartDefines(buildInfo.extraFrontEndOptions),
       },
       artifacts: globals.artifacts,
       fileSystem: globals.fs,
       logger: globals.logger,
       processManager: globals.processManager,
-      cacheDir: globals.cache.getRoot(),
-      engineVersion: globals.artifacts.isLocalEngine
-        ? null
-        : globals.flutterVersion.engineRevision,
-      flutterRootDir: globals.fs.directory(Cache.flutterRoot),
     ));
     if (!result.success) {
       for (final ExceptionMeasurement measurement in result.exceptions.values) {

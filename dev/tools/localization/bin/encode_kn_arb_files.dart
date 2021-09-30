@@ -2,17 +2,26 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// The utility function `encodeKnArbFiles` replaces the material_kn.arb
-// and cupertino_kn.arb files in flutter_localizations/packages/lib/src/l10n
-// with versions where the contents of the localized strings have been
-// replaced by JSON escapes. This is done because some of those strings
-// contain characters that can crash Emacs on Linux. There is more information
+// This program replaces the material_kn.arb and cupertino_kn.arb
+// files in flutter_localizations/packages/lib/src/l10n with versions
+// where the contents of the localized strings have been replaced by JSON
+// escapes. This is done because some of those strings contain characters
+// that can crash Emacs on Linux. There is more information
 // here: https://github.com/flutter/flutter/issues/36704 and in the README
 // in flutter_localizations/packages/lib/src/l10n.
 //
-// This utility is run by `gen_localizations.dart` if --overwrite is passed
-// in as an option.
+// This app needs to be run by hand when material_kn.arb or cupertino_kn.arb
+// have been updated.
+//
+// ## Usage
+//
+// Run this program from the root of the git repository.
+//
+// ```
+// dart dev/tools/localization/bin/encode_kn_arb_files.dart
+// ```
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -20,13 +29,13 @@ import 'package:path/path.dart' as path;
 
 import '../localizations_utils.dart';
 
-Map<String, dynamic> _loadBundle(File file) {
+Map<String, dynamic> loadBundle(File file) {
   if (!FileSystemEntity.isFileSync(file.path))
     exitWithError('Unable to find input file: ${file.path}');
   return json.decode(file.readAsStringSync()) as Map<String, dynamic>;
 }
 
-void _encodeBundleTranslations(Map<String, dynamic> bundle) {
+void encodeBundleTranslations(Map<String, dynamic> bundle) {
   for (final String key in bundle.keys) {
     // The ARB file resource "attributes" for foo are called @foo. Don't need
     // to encode them.
@@ -42,7 +51,7 @@ void _encodeBundleTranslations(Map<String, dynamic> bundle) {
   }
 }
 
-void _checkEncodedTranslations(Map<String, dynamic> encodedBundle, Map<String, dynamic> bundle) {
+void checkEncodedTranslations(Map<String, dynamic> encodedBundle, Map<String, dynamic> bundle) {
   bool errorFound = false;
   const JsonDecoder decoder = JsonDecoder();
   for (final String key in bundle.keys) {
@@ -55,7 +64,7 @@ void _checkEncodedTranslations(Map<String, dynamic> encodedBundle, Map<String, d
     exitWithError('JSON unicode translation encoding failed');
 }
 
-void _rewriteBundle(File file, Map<String, dynamic> bundle) {
+void rewriteBundle(File file, Map<String, dynamic> bundle) {
   final StringBuffer contents = StringBuffer();
   contents.writeln('{');
   for (final String key in bundle.keys) {
@@ -65,19 +74,22 @@ void _rewriteBundle(File file, Map<String, dynamic> bundle) {
   file.writeAsStringSync(contents.toString());
 }
 
-void encodeKnArbFiles(Directory directory) {
-  final File materialArbFile = File(path.join(directory.path, 'material_kn.arb'));
-  final File cupertinoArbFile = File(path.join(directory.path, 'cupertino_kn.arb'));
+Future<void> main(List<String> rawArgs) async {
+  checkCwdIsRepoRoot('encode_kn_arb_files');
 
-  final Map<String, dynamic> materialBundle = _loadBundle(materialArbFile);
-  final Map<String, dynamic> cupertinoBundle = _loadBundle(cupertinoArbFile);
+  final String l10nPath = path.join('packages', 'flutter_localizations', 'lib', 'src', 'l10n');
+  final File materialArbFile = File(path.join(l10nPath, 'material_kn.arb'));
+  final File cupertinoArbFile = File(path.join(l10nPath, 'cupertino_kn.arb'));
 
-  _encodeBundleTranslations(materialBundle);
-  _encodeBundleTranslations(cupertinoBundle);
+  final Map<String, dynamic> materialBundle = loadBundle(materialArbFile);
+  final Map<String, dynamic> cupertinoBundle = loadBundle(cupertinoArbFile);
 
-  _checkEncodedTranslations(materialBundle, _loadBundle(materialArbFile));
-  _checkEncodedTranslations(cupertinoBundle, _loadBundle(cupertinoArbFile));
+  encodeBundleTranslations(materialBundle);
+  encodeBundleTranslations(cupertinoBundle);
 
-  _rewriteBundle(materialArbFile, materialBundle);
-  _rewriteBundle(cupertinoArbFile, cupertinoBundle);
+  checkEncodedTranslations(materialBundle, loadBundle(materialArbFile));
+  checkEncodedTranslations(cupertinoBundle, loadBundle(cupertinoArbFile));
+
+  rewriteBundle(materialArbFile, materialBundle);
+  rewriteBundle(cupertinoArbFile, cupertinoBundle);
 }

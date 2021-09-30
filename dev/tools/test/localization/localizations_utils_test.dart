@@ -37,7 +37,11 @@ void main() {
     });
 
     test('escapes dollar when escapeDollar is true', () {
-      expect(generateString(r'ab$c'), "'ab\\\$c'");
+      expect(generateString(r'ab$c', escapeDollar: true), "'ab\\\$c'");
+    });
+
+    test('does not escape dollar when escapeDollar  is false', () {
+      expect(generateString(r'ab$c', escapeDollar: false), "'ab\$c'");
     });
 
     test('handles backslash', () {

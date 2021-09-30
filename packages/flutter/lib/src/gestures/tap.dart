@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:vector_math/vector_math_64.dart' show Matrix4;
 import 'package:flutter/foundation.dart';
 
@@ -371,7 +369,7 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
   /// of a primary button.
   ///
   /// This triggers on the up event, if the recognizer wins the arena with it
-  /// or has previously won, immediately following [onTapUp].
+  /// or has previously won, immediately following [onTap].
   ///
   /// If this recognizer doesn't win the arena, [onTapCancel] is called instead.
   ///
@@ -397,22 +395,6 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
   ///  * [onSecondaryTapCancel], a similar callback but for a secondary button.
   ///  * [GestureDetector.onTapCancel], which exposes this callback.
   GestureTapCancelCallback onTapCancel;
-
-  /// A pointer has stopped contacting the screen, which is recognized as a tap
-  /// of a secondary button.
-  ///
-  /// This triggers on the up event, if the recognizer wins the arena with it or
-  /// has previously won, immediately following [onSecondaryTapUp].
-  ///
-  /// If this recognizer doesn't win the arena, [onSecondaryTapCancel] is called
-  /// instead.
-  ///
-  /// See also:
-  ///
-  ///  * [kSecondaryButton], the button this callback responds to.
-  ///  * [onSecondaryTapUp], which has the same timing but with details.
-  ///  * [GestureDetector.onSecondaryTap], which exposes this callback.
-  GestureTapCallback onSecondaryTap;
 
   /// A pointer has contacted the screen at a particular location with a
   /// secondary button, which might be the start of a secondary tap.
@@ -442,8 +424,6 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
   ///
   /// See also:
   ///
-  ///  * [onSecondaryTap], a handler triggered right after this one that doesn't
-  ///    pass any details about the tap.
   ///  * [kSecondaryButton], the button this callback responds to.
   ///  * [onTapUp], a similar callback but for a primary button.
   ///  * [TapUpDetails], which is passed as an argument to this callback.
@@ -476,8 +456,7 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
           return false;
         break;
       case kSecondaryButton:
-        if (onSecondaryTap == null &&
-            onSecondaryTapDown == null &&
+        if (onSecondaryTapDown == null &&
             onSecondaryTapUp == null &&
             onSecondaryTapCancel == null)
           return false;
@@ -503,7 +482,8 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
         break;
       case kSecondaryButton:
         if (onSecondaryTapDown != null)
-          invokeCallback<void>('onSecondaryTapDown', () => onSecondaryTapDown(details));
+          invokeCallback<void>('onSecondaryTapDown',
+            () => onSecondaryTapDown(details));
         break;
       default:
     }
@@ -525,9 +505,8 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
         break;
       case kSecondaryButton:
         if (onSecondaryTapUp != null)
-          invokeCallback<void>('onSecondaryTapUp', () => onSecondaryTapUp(details));
-        if (onSecondaryTap != null)
-          invokeCallback<void>('onSecondaryTap', () => onSecondaryTap());
+          invokeCallback<void>('onSecondaryTapUp',
+            () => onSecondaryTapUp(details));
         break;
       default:
     }
@@ -544,7 +523,8 @@ class TapGestureRecognizer extends BaseTapGestureRecognizer {
         break;
       case kSecondaryButton:
         if (onSecondaryTapCancel != null)
-          invokeCallback<void>('${note}onSecondaryTapCancel', onSecondaryTapCancel);
+          invokeCallback<void>('${note}onSecondaryTapCancel',
+            onSecondaryTapCancel);
         break;
       default:
     }

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui' show Offset, PointerDeviceKind;
 
 import 'package:flutter/foundation.dart';
@@ -32,7 +30,7 @@ const int kPrimaryButton = 0x01;
 /// It is equivalent to:
 ///
 ///  * [kPrimaryStylusButton]: The stylus contacts the screen.
-///  * [kSecondaryMouseButton]: The secondary mouse button.
+///  * [kSecondaryMouseButton]: The primary mouse button.
 ///
 /// See also:
 ///
@@ -202,7 +200,6 @@ abstract class PointerEvent with Diagnosticable {
   /// Abstract const constructor. This constructor enables subclasses to provide
   /// const constructors so that they can be used in const expressions.
   const PointerEvent({
-    this.embedderId = 0,
     this.timeStamp = Duration.zero,
     this.pointer = 0,
     this.kind = PointerDeviceKind.touch,
@@ -233,14 +230,6 @@ abstract class PointerEvent with Diagnosticable {
   }) : localPosition = localPosition ?? position,
        localDelta = localDelta ?? delta;
 
-  /// Unique identifier that ties the [PointerEvent] to the embedder event that created it.
-  ///
-  /// No two pointer events can have the same [embedderId] on platforms that set it.
-  /// This is different from [pointer] identifier - used for hit-testing,
-  /// whereas [embedderId] is used to identify the platform event.
-  ///
-  /// On Android this is ID of the underlying [MotionEvent](https://developer.android.com/reference/android/view/MotionEvent).
-  final int embedderId;
 
   /// Time of event dispatch, relative to an arbitrary timeline.
   final Duration timeStamp;
@@ -513,7 +502,6 @@ abstract class PointerEvent with Diagnosticable {
     properties.add(IntProperty('platformData', platformData, defaultValue: 0, level: DiagnosticLevel.debug));
     properties.add(FlagProperty('obscured', value: obscured, ifTrue: 'obscured', level: DiagnosticLevel.debug));
     properties.add(FlagProperty('synthesized', value: synthesized, ifTrue: 'synthesized', level: DiagnosticLevel.debug));
-    properties.add(IntProperty('embedderId', embedderId, defaultValue: 0, level: DiagnosticLevel.debug));
   }
 
   /// Returns a complete textual description of this event.
@@ -602,7 +590,6 @@ class PointerAddedEvent extends PointerEvent {
     double tilt = 0.0,
     Matrix4 transform,
     PointerAddedEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          kind: kind,
@@ -621,7 +608,6 @@ class PointerAddedEvent extends PointerEvent {
          tilt: tilt,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -646,7 +632,6 @@ class PointerAddedEvent extends PointerEvent {
       tilt: tilt,
       transform: transform,
       original: original as PointerAddedEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -673,7 +658,6 @@ class PointerRemovedEvent extends PointerEvent {
     double radiusMax = 0.0,
     Matrix4 transform,
     PointerRemovedEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          kind: kind,
@@ -689,7 +673,6 @@ class PointerRemovedEvent extends PointerEvent {
          radiusMax: radiusMax,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -711,7 +694,6 @@ class PointerRemovedEvent extends PointerEvent {
       radiusMax: radiusMax,
       transform: transform,
       original: original as PointerRemovedEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -754,7 +736,6 @@ class PointerHoverEvent extends PointerEvent {
     bool synthesized = false,
     Matrix4 transform,
     PointerHoverEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          kind: kind,
@@ -781,7 +762,6 @@ class PointerHoverEvent extends PointerEvent {
          synthesized: synthesized,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -819,7 +799,6 @@ class PointerHoverEvent extends PointerEvent {
       synthesized: synthesized,
       transform: transform,
       original: original as PointerHoverEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -863,7 +842,6 @@ class PointerEnterEvent extends PointerEvent {
     bool synthesized = false,
     Matrix4 transform,
     PointerEnterEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          kind: kind,
@@ -890,7 +868,6 @@ class PointerEnterEvent extends PointerEvent {
          synthesized: synthesized,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   /// Creates an enter event from a [PointerHoverEvent].
@@ -929,7 +906,7 @@ class PointerEnterEvent extends PointerEvent {
     down: event?.down,
     synthesized: event?.synthesized,
     transform: event?.transform,
-    original: null,
+    original: event?.original as PointerEnterEvent,
   );
 
   @override
@@ -968,7 +945,6 @@ class PointerEnterEvent extends PointerEvent {
       synthesized: synthesized,
       transform: transform,
       original: original as PointerEnterEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -1012,7 +988,6 @@ class PointerExitEvent extends PointerEvent {
     bool synthesized = false,
     Matrix4 transform,
     PointerExitEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          kind: kind,
@@ -1039,7 +1014,6 @@ class PointerExitEvent extends PointerEvent {
          synthesized: synthesized,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   /// Creates an exit event from a [PointerHoverEvent].
@@ -1078,7 +1052,7 @@ class PointerExitEvent extends PointerEvent {
     down: event?.down,
     synthesized: event?.synthesized,
     transform: event?.transform,
-    original: null,
+    original: event?.original as PointerExitEvent,
   );
 
   @override
@@ -1117,7 +1091,6 @@ class PointerExitEvent extends PointerEvent {
       synthesized: synthesized,
       transform: transform,
       original: original as PointerExitEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -1149,7 +1122,6 @@ class PointerDownEvent extends PointerEvent {
     double tilt = 0.0,
     Matrix4 transform,
     PointerDownEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          pointer: pointer,
@@ -1174,7 +1146,6 @@ class PointerDownEvent extends PointerEvent {
          tilt: tilt,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -1204,7 +1175,6 @@ class PointerDownEvent extends PointerEvent {
       tilt: tilt,
       transform: transform,
       original: original as PointerDownEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -1246,7 +1216,6 @@ class PointerMoveEvent extends PointerEvent {
     bool synthesized = false,
     Matrix4 transform,
     PointerMoveEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          pointer: pointer,
@@ -1275,7 +1244,6 @@ class PointerMoveEvent extends PointerEvent {
          synthesized: synthesized,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -1316,7 +1284,6 @@ class PointerMoveEvent extends PointerEvent {
       synthesized: synthesized,
       transform: transform,
       original: original as PointerMoveEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -1351,7 +1318,6 @@ class PointerUpEvent extends PointerEvent {
     double tilt = 0.0,
     Matrix4 transform,
     PointerUpEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          pointer: pointer,
@@ -1376,7 +1342,6 @@ class PointerUpEvent extends PointerEvent {
          tilt: tilt,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -1407,7 +1372,6 @@ class PointerUpEvent extends PointerEvent {
       tilt: tilt,
       transform: transform,
       original: original as PointerUpEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }
@@ -1429,7 +1393,6 @@ abstract class PointerSignalEvent extends PointerEvent {
     Offset localPosition,
     Matrix4 transform,
     PointerSignalEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          pointer: pointer,
@@ -1439,7 +1402,6 @@ abstract class PointerSignalEvent extends PointerEvent {
          localPosition: localPosition,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 }
 
@@ -1460,7 +1422,6 @@ class PointerScrollEvent extends PointerSignalEvent {
     this.scrollDelta = Offset.zero,
     Matrix4 transform,
     PointerScrollEvent original,
-    int embedderId = 0,
   }) : assert(timeStamp != null),
        assert(kind != null),
        assert(device != null),
@@ -1474,7 +1435,6 @@ class PointerScrollEvent extends PointerSignalEvent {
          localPosition: localPosition,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   /// The amount to scroll, in logical pixels.
@@ -1494,7 +1454,6 @@ class PointerScrollEvent extends PointerSignalEvent {
       scrollDelta: scrollDelta,
       transform: transform,
       original: original as PointerScrollEvent ?? this,
-      embedderId: embedderId,
     );
   }
 
@@ -1532,7 +1491,6 @@ class PointerCancelEvent extends PointerEvent {
     double tilt = 0.0,
     Matrix4 transform,
     PointerCancelEvent original,
-    int embedderId = 0,
   }) : super(
          timeStamp: timeStamp,
          pointer: pointer,
@@ -1557,7 +1515,6 @@ class PointerCancelEvent extends PointerEvent {
          tilt: tilt,
          transform: transform,
          original: original,
-         embedderId: embedderId,
        );
 
   @override
@@ -1587,7 +1544,6 @@ class PointerCancelEvent extends PointerEvent {
       tilt: tilt,
       transform: transform,
       original: original as PointerCancelEvent ?? this,
-      embedderId: embedderId,
     );
   }
 }

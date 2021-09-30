@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
-import '../android/android_workflow.dart';
 import '../base/common.dart';
 import '../base/context.dart';
 import '../base/file_system.dart';
@@ -16,6 +15,7 @@ import '../base/logger.dart';
 import '../base/terminal.dart';
 import '../base/utils.dart';
 import '../build_info.dart';
+import '../cache.dart';
 import '../convert.dart';
 import '../device.dart';
 import '../emulator.dart';
@@ -52,14 +52,26 @@ class DaemonCommand extends FlutterCommand {
     globals.printStatus('Starting device daemon...');
     isRunningFromDaemon = true;
 
-    final Daemon daemon = Daemon(
-      stdinCommandStream, stdoutCommandResponse,
-      notifyingLogger: globals.logger as NotifyingLogger,
+    final NotifyingLogger notifyingLogger = NotifyingLogger();
+
+    Cache.releaseLockEarly();
+
+    await context.run<void>(
+      body: () async {
+        final Daemon daemon = Daemon(
+          stdinCommandStream, stdoutCommandResponse,
+          notifyingLogger: notifyingLogger,
+        );
+
+        final int code = await daemon.onExit;
+        if (code != 0) {
+          throwToolExit('Daemon exited with non-zero exit code: $code', exitCode: code);
+        }
+      },
+      overrides: <Type, Generator>{
+        Logger: () => notifyingLogger,
+      },
     );
-    final int code = await daemon.onExit;
-    if (code != 0) {
-      throwToolExit('Daemon exited with non-zero exit code: $code', exitCode: code);
-    }
     return FlutterCommandResult.success();
   }
 }
@@ -179,10 +191,10 @@ class Daemon {
 
   void _send(Map<String, dynamic> map) => sendCommand(map);
 
-  Future<void> shutdown({ dynamic error }) async {
-    await _commandSubscription?.cancel();
+  void shutdown({ dynamic error }) {
+    _commandSubscription?.cancel();
     for (final Domain domain in _domainMap.values) {
-      await domain.dispose();
+      domain.dispose();
     }
     if (!_onExitCompleter.isCompleted) {
       if (error == null) {
@@ -273,7 +285,7 @@ abstract class Domain {
     return val as int;
   }
 
-  Future<void> dispose() async { }
+  void dispose() { }
 }
 
 /// This domain responds to methods like [version] and [shutdown].
@@ -351,8 +363,8 @@ class DaemonDomain extends Domain {
   }
 
   @override
-  Future<void> dispose() async {
-    await _subscription?.cancel();
+  void dispose() {
+    _subscription?.cancel();
   }
 
   /// Enumerates the platforms supported by the provided project.
@@ -447,13 +459,9 @@ class AppDomain extends Domain {
     bool ipv6 = false,
     String isolateFilter,
   }) async {
-    if (!await device.supportsRuntimeMode(options.buildInfo.mode)) {
-      throw Exception(
-        '${toTitleCase(options.buildInfo.friendlyModeName)} '
-        'mode is not supported for ${device.name}.',
-      );
+    if (await device.isLocalEmulator && !options.buildInfo.supportsEmulator) {
+      throw Exception('${toTitleCase(options.buildInfo.friendlyModeName)} mode is not supported for emulators.');
     }
-
     // We change the current working directory for the duration of the `start` command.
     final Directory cwd = globals.fs.currentDirectory;
     globals.fs.currentDirectory = globals.fs.directory(projectDirectory);
@@ -486,6 +494,7 @@ class AppDomain extends Domain {
         debuggingOptions: options,
         applicationBinary: applicationBinary,
         projectRootPath: projectRootPath,
+        packagesFilePath: packagesFilePath,
         dillOutputPath: dillOutputPath,
         ipv6: ipv6,
         hostIsIde: true,
@@ -780,20 +789,18 @@ class DeviceDomain extends Domain {
 
   /// Enable device events.
   Future<void> enable(Map<String, dynamic> args) {
-    final List<Future<void>> calls = <Future<void>>[];
     for (final PollingDeviceDiscovery discoverer in _discoverers) {
-      calls.add(discoverer.startPolling());
+      discoverer.startPolling();
     }
-    return Future.wait<void>(calls);
+    return Future<void>.value();
   }
 
   /// Disable device events.
-  Future<void> disable(Map<String, dynamic> args) async {
-    final List<Future<void>> calls = <Future<void>>[];
+  Future<void> disable(Map<String, dynamic> args) {
     for (final PollingDeviceDiscovery discoverer in _discoverers) {
-      calls.add(discoverer.stopPolling());
+      discoverer.stopPolling();
     }
-    return Future.wait<void>(calls);
+    return Future<void>.value();
   }
 
   /// Forward a host port to a device port.
@@ -827,9 +834,9 @@ class DeviceDomain extends Domain {
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() {
     for (final PollingDeviceDiscovery discoverer in _discoverers) {
-      await discoverer.dispose();
+      discoverer.dispose();
     }
   }
 
@@ -917,23 +924,7 @@ dynamic _toJsonable(dynamic obj) {
 }
 
 class NotifyingLogger extends Logger {
-  NotifyingLogger({ @required this.verbose, this.parent }) {
-    _messageController = StreamController<LogMessage>.broadcast(
-      onListen: _onListen,
-    );
-  }
-
-  final bool verbose;
-  final Logger parent;
-  final List<LogMessage> messageBuffer = <LogMessage>[];
-  StreamController<LogMessage> _messageController;
-
-  void _onListen() {
-    if (messageBuffer.isNotEmpty) {
-      messageBuffer.forEach(_messageController.add);
-      messageBuffer.clear();
-    }
-  }
+  final StreamController<LogMessage> _messageController = StreamController<LogMessage>.broadcast();
 
   Stream<LogMessage> get onMessage => _messageController.stream;
 
@@ -947,7 +938,7 @@ class NotifyingLogger extends Logger {
     int hangingIndent,
     bool wrap,
   }) {
-    _sendMessage(LogMessage('error', message, stackTrace));
+    _messageController.add(LogMessage('error', message, stackTrace));
   }
 
   @override
@@ -960,15 +951,12 @@ class NotifyingLogger extends Logger {
     int hangingIndent,
     bool wrap,
   }) {
-    _sendMessage(LogMessage('status', message));
+    _messageController.add(LogMessage('status', message));
   }
 
   @override
   void printTrace(String message) {
-    if (!verbose) {
-      return;
-    }
-    parent?.printError(message);
+    // This is a lot of traffic to send over the wire.
   }
 
   @override
@@ -986,13 +974,6 @@ class NotifyingLogger extends Logger {
       timeoutConfiguration: timeoutConfiguration,
       stopwatch: Stopwatch(),
     );
-  }
-
-  void _sendMessage(LogMessage logMessage) {
-    if (_messageController.hasListener) {
-      return _messageController.add(logMessage);
-    }
-    messageBuffer.add(logMessage);
   }
 
   void dispose() {
@@ -1058,13 +1039,7 @@ class EmulatorDomain extends Domain {
     registerHandler('create', create);
   }
 
-  EmulatorManager emulators = EmulatorManager(
-    fileSystem: globals.fs,
-    logger: globals.logger,
-    androidSdk: globals.androidSdk,
-    processManager: globals.processManager,
-    androidWorkflow: androidWorkflow,
-  );
+  EmulatorManager emulators = EmulatorManager();
 
   Future<List<Map<String, dynamic>>> getEmulators([ Map<String, dynamic> args ]) async {
     final List<Emulator> list = await emulators.getAllAvailableEmulators();

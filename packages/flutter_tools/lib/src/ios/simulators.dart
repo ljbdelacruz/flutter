@@ -307,22 +307,13 @@ class IOSSimulator extends Device {
   @override
   bool get supportsHotRestart => true;
 
-  @override
-  Future<bool> get supportsHardwareRendering async => false;
-
-  @override
-  bool supportsRuntimeMode(BuildMode buildMode) => buildMode == BuildMode.debug;
-
   Map<ApplicationPackage, _IOSSimulatorLogReader> _logReaders;
   _IOSSimulatorDevicePortForwarder _portForwarder;
 
   String get xcrunPath => globals.fs.path.join('/usr', 'bin', 'xcrun');
 
   @override
-  Future<bool> isAppInstalled(
-    ApplicationPackage app, {
-    String userIdentifier,
-  }) {
+  Future<bool> isAppInstalled(ApplicationPackage app) {
     return _simControl.isInstalled(id, app.id);
   }
 
@@ -330,10 +321,7 @@ class IOSSimulator extends Device {
   Future<bool> isLatestBuildInstalled(ApplicationPackage app) async => false;
 
   @override
-  Future<bool> installApp(
-    covariant IOSApp app, {
-    String userIdentifier,
-  }) async {
+  Future<bool> installApp(covariant IOSApp app) async {
     try {
       final IOSApp iosApp = app;
       await _simControl.install(id, iosApp.simulatorBundlePath);
@@ -344,10 +332,7 @@ class IOSSimulator extends Device {
   }
 
   @override
-  Future<bool> uninstallApp(
-    ApplicationPackage app, {
-    String userIdentifier,
-  }) async {
+  Future<bool> uninstallApp(ApplicationPackage app) async {
     try {
       await _simControl.uninstall(id, app.id);
       return true;
@@ -363,10 +348,10 @@ class IOSSimulator extends Device {
       return false;
     }
 
-    // Check if the device is part of a blocked category.
+    // Check if the device is part of a blacklisted category.
     // We do not yet support WatchOS or tvOS devices.
-    final RegExp blocklist = RegExp(r'Apple (TV|Watch)', caseSensitive: false);
-    if (blocklist.hasMatch(name)) {
+    final RegExp blacklist = RegExp(r'Apple (TV|Watch)', caseSensitive: false);
+    if (blacklist.hasMatch(name)) {
       _supportMessage = 'Flutter does not support Apple TV or Apple Watch.';
       return false;
     }
@@ -393,7 +378,6 @@ class IOSSimulator extends Device {
     Map<String, dynamic> platformArgs,
     bool prebuiltApplication = false,
     bool ipv6 = false,
-    String userIdentifier,
   }) async {
     if (!prebuiltApplication && package is BuildableIOSApp) {
       globals.printTrace('Building ${package.name} for $id.');
@@ -422,7 +406,7 @@ class IOSSimulator extends Device {
         if (debuggingOptions.disableServiceAuthCodes) '--disable-service-auth-codes',
         if (debuggingOptions.skiaDeterministicRendering) '--skia-deterministic-rendering',
         if (debuggingOptions.useTestFonts) '--use-test-fonts',
-        if (debuggingOptions.traceAllowlist != null) '--trace-allowlist="${debuggingOptions.traceAllowlist}"',
+        if (debuggingOptions.traceWhitelist != null) '--trace-whitelist="${debuggingOptions.traceWhitelist}"',
         '--observatory-port=${debuggingOptions.hostVmServicePort ?? 0}',
       ],
     ];
@@ -487,7 +471,6 @@ class IOSSimulator extends Device {
       buildInfo: buildInfo,
       targetOverride: mainPath,
       buildForDevice: false,
-      deviceID: id,
     );
     if (!buildResult.success) {
       throwToolExit('Could not build the application for the simulator.');
@@ -505,10 +488,7 @@ class IOSSimulator extends Device {
   }
 
   @override
-  Future<bool> stopApp(
-    ApplicationPackage app, {
-    String userIdentifier,
-  }) async {
+  Future<bool> stopApp(ApplicationPackage app) async {
     // Currently we don't have a way to stop an app running on iOS.
     return false;
   }
@@ -544,7 +524,7 @@ class IOSSimulator extends Device {
     covariant IOSApp app,
     bool includePastLogs = false,
   }) {
-    assert(app == null || app is IOSApp);
+    assert(app is IOSApp);
     assert(!includePastLogs, 'Past log reading not supported on iOS simulators.');
     _logReaders ??= <ApplicationPackage, _IOSSimulatorLogReader>{};
     return _logReaders.putIfAbsent(app, () => _IOSSimulatorLogReader(this, app));
@@ -600,41 +580,20 @@ class IOSSimulator extends Device {
   }
 }
 
-/// Launches the device log reader process on the host and parses the syslog.
-@visibleForTesting
-Future<Process> launchDeviceSystemLogTool(IOSSimulator device) async {
-  return processUtils.start(<String>['tail', '-n', '0', '-F', device.logFilePath]);
-}
+/// Launches the device log reader process on the host.
+Future<Process> launchDeviceLogTool(IOSSimulator device) async {
+  // Versions of iOS prior to iOS 11 log to the simulator syslog file.
+  if (await device.sdkMajorVersion < 11) {
+    return processUtils.start(<String>['tail', '-n', '0', '-F', device.logFilePath]);
+  }
 
-/// Launches the device log reader process on the host and parses unified logging.
-@visibleForTesting
-Future<Process> launchDeviceUnifiedLogging (IOSSimulator device, String appName) async {
-  // Make NSPredicate concatenation easier to read.
-  String orP(List<String> clauses) => '(${clauses.join(" OR ")})';
-  String andP(List<String> clauses) => clauses.join(' AND ');
-  String notP(String clause) => 'NOT($clause)';
-
-  final String predicate = andP(<String>[
-    'eventType = logEvent',
-    if (appName != null) 'processImagePath ENDSWITH "$appName"',
-    // Either from Flutter or Swift (maybe assertion or fatal error) or from the app itself.
-    orP(<String>[
-      'senderImagePath ENDSWITH "/Flutter"',
-      'senderImagePath ENDSWITH "/libswiftCore.dylib"',
-      'processImageUUID == senderImageUUID',
-    ]),
-    // Filter out some messages that clearly aren't related to Flutter.
-    notP('eventMessage CONTAINS ": could not find icon for representation -> com.apple."'),
-    notP('eventMessage BEGINSWITH "assertion failed: "'),
-    notP('eventMessage CONTAINS " libxpc.dylib "'),
-  ]);
-
+  // For iOS 11 and above, use /usr/bin/log to tail process logs.
+  // Run in interactive mode (via script), otherwise /usr/bin/log buffers in 4k chunks. (radar: 34420207)
   return processUtils.start(<String>[
-    _xcrunPath, 'simctl', 'spawn', device.id, 'log', 'stream', '--style', 'json', '--predicate', predicate,
+    'script', '/dev/null', '/usr/bin/log', 'stream', '--style', 'syslog', '--predicate', 'processImagePath CONTAINS "${device.id}"',
   ]);
 }
 
-@visibleForTesting
 Future<Process> launchSystemLogTool(IOSSimulator device) async {
   // Versions of iOS prior to 11 tail the simulator syslog file.
   if (await device.sdkMajorVersion < 11) {
@@ -671,18 +630,11 @@ class _IOSSimulatorLogReader extends DeviceLogReader {
   String get name => device.name;
 
   Future<void> _start() async {
-    // Unified logging iOS 11 and greater (introduced in iOS 10).
-    if (await device.sdkMajorVersion >= 11) {
-      _deviceProcess = await launchDeviceUnifiedLogging(device, _appName);
-      _deviceProcess.stdout.transform<String>(utf8.decoder).transform<String>(const LineSplitter()).listen(_onUnifiedLoggingLine);
-      _deviceProcess.stderr.transform<String>(utf8.decoder).transform<String>(const LineSplitter()).listen(_onUnifiedLoggingLine);
-    } else {
-      // Fall back to syslog parsing.
-      await device.ensureLogsExists();
-      _deviceProcess = await launchDeviceSystemLogTool(device);
-      _deviceProcess.stdout.transform<String>(utf8.decoder).transform<String>(const LineSplitter()).listen(_onSysLogDeviceLine);
-      _deviceProcess.stderr.transform<String>(utf8.decoder).transform<String>(const LineSplitter()).listen(_onSysLogDeviceLine);
-    }
+    // Device log.
+    await device.ensureLogsExists();
+    _deviceProcess = await launchDeviceLogTool(device);
+    _deviceProcess.stdout.transform<String>(utf8.decoder).transform<String>(const LineSplitter()).listen(_onDeviceLine);
+    _deviceProcess.stderr.transform<String>(utf8.decoder).transform<String>(const LineSplitter()).listen(_onDeviceLine);
 
     // Track system.log crashes.
     // ReportCrash[37965]: Saved crash report for FlutterRunner[37941]...
@@ -704,7 +656,7 @@ class _IOSSimulatorLogReader extends DeviceLogReader {
   // Match the log prefix (in order to shorten it):
   // * Xcode 8: Sep 13 15:28:51 cbracken-macpro localhost Runner[37195]: (Flutter) Observatory listening on http://127.0.0.1:57701/
   // * Xcode 9: 2017-09-13 15:26:57.228948-0700  localhost Runner[37195]: (Flutter) Observatory listening on http://127.0.0.1:57701/
-  static final RegExp _mapRegex = RegExp(r'\S+ +\S+ +(?:\S+) (.+?(?=\[))\[\d+\]\)?: (\(.*?\))? *(.*)$');
+  static final RegExp _mapRegex = RegExp(r'\S+ +\S+ +\S+ +(\S+ +)?(\S+)\[\d+\]\)?: (\(.*?\))? *(.*)$');
 
   // Jan 31 19:23:28 --- last message repeated 1 time ---
   static final RegExp _lastMessageSingleRegex = RegExp(r'\S+ +\S+ +\S+ --- last message repeated 1 time ---$');
@@ -719,16 +671,12 @@ class _IOSSimulatorLogReader extends DeviceLogReader {
   String _filterDeviceLine(String string) {
     final Match match = _mapRegex.matchAsPrefix(string);
     if (match != null) {
+      final String category = match.group(2);
+      final String tag = match.group(3);
+      final String content = match.group(4);
 
-      // The category contains the text between the date and the PID. Depending on which version of iOS being run,
-      // it can contain "hostname App Name" or just "App Name".
-      final String category = match.group(1);
-      final String tag = match.group(2);
-      final String content = match.group(3);
-
-      // Filter out log lines from an app other than this one (category doesn't match the app name).
-      // If the hostname is included in the category, check that it doesn't end with the app name.
-      if (_appName != null && !category.endsWith(_appName)) {
+      // Filter out non-Flutter originated noise from the engine.
+      if (_appName != null && category != _appName) {
         return null;
       }
 
@@ -748,7 +696,7 @@ class _IOSSimulatorLogReader extends DeviceLogReader {
 
       if (_appName == null) {
         return '$category: $content';
-      } else if (category == _appName || category.endsWith(' $_appName')) {
+      } else if (category == _appName) {
         return content;
       }
 
@@ -781,7 +729,7 @@ class _IOSSimulatorLogReader extends DeviceLogReader {
 
   String _lastLine;
 
-  void _onSysLogDeviceLine(String line) {
+  void _onDeviceLine(String line) {
     globals.printTrace('[DEVICE LOG] $line');
     final Match multi = _lastMessageMultipleRegex.matchAsPrefix(line);
 
@@ -800,19 +748,6 @@ class _IOSSimulatorLogReader extends DeviceLogReader {
         _lastLineMatched = true;
       } else {
         _lastLineMatched = false;
-      }
-    }
-  }
-
-  //   "eventMessage" : "flutter: 21",
-  static final RegExp _unifiedLoggingEventMessageRegex = RegExp(r'.*"eventMessage" : (".*")');
-  void _onUnifiedLoggingLine(String line) {
-    // The log command predicate handles filtering, so every log eventMessage should be decoded and added.
-    final Match eventMessageMatch = _unifiedLoggingEventMessageRegex.firstMatch(line);
-    if (eventMessageMatch != null) {
-      final dynamic decodedJson = jsonDecode(eventMessageMatch.group(1));
-      if (decodedJson is String) {
-        _linesController.add(decodedJson);
       }
     }
   }
@@ -920,7 +855,7 @@ class _IOSSimulatorDevicePortForwarder extends DevicePortForwarder {
 
   @override
   Future<void> dispose() async {
-    final List<ForwardedPort> portsCopy = List<ForwardedPort>.of(_ports);
+    final List<ForwardedPort> portsCopy = List<ForwardedPort>.from(_ports);
     for (final ForwardedPort port in portsCopy) {
       await unforward(port);
     }

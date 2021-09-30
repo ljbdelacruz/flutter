@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'dart:ui' as ui show ImageFilter, Gradient, Image, Color;
@@ -13,14 +11,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter/services.dart';
 
 import 'package:vector_math/vector_math_64.dart';
 
 import 'binding.dart';
 import 'box.dart';
 import 'layer.dart';
-import 'mouse_cursor.dart';
 import 'mouse_tracking.dart';
 import 'object.dart';
 
@@ -1103,30 +1099,13 @@ class RenderBackdropFilter extends RenderProxyBox {
 ///  * [ClipOval], which can be customized with a [CustomClipper<Rect>].
 ///  * [ClipPath], which can be customized with a [CustomClipper<Path>].
 ///  * [ShapeBorderClipper], for specifying a clip path using a [ShapeBorder].
-abstract class CustomClipper<T> extends Listenable {
+abstract class CustomClipper<T> {
   /// Creates a custom clipper.
   ///
   /// The clipper will update its clip whenever [reclip] notifies its listeners.
   const CustomClipper({ Listenable reclip }) : _reclip = reclip;
 
   final Listenable _reclip;
-
-  /// Register a closure to be notified when it is time to reclip.
-  ///
-  /// The [CustomClipper] implementation merely forwards to the same method on
-  /// the [Listenable] provided to the constructor in the `reclip` argument, if
-  /// it was not null.
-  @override
-  void addListener(VoidCallback listener) => _reclip?.addListener(listener);
-
-  /// Remove a previously registered closure from the list of closures that the
-  /// object notifies when it is time to reclip.
-  ///
-  /// The [CustomClipper] implementation merely forwards to the same method on
-  /// the [Listenable] provided to the constructor in the `reclip` argument, if
-  /// it was not null.
-  @override
-  void removeListener(VoidCallback listener) => _reclip?.removeListener(listener);
 
   /// Returns a description of the clip given that the render object being
   /// clipped is of the given size.
@@ -1228,20 +1207,20 @@ abstract class _RenderCustomClip<T> extends RenderProxyBox {
       _markNeedsClip();
     }
     if (attached) {
-      oldClipper?.removeListener(_markNeedsClip);
-      newClipper?.addListener(_markNeedsClip);
+      oldClipper?._reclip?.removeListener(_markNeedsClip);
+      newClipper?._reclip?.addListener(_markNeedsClip);
     }
   }
 
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
-    _clipper?.addListener(_markNeedsClip);
+    _clipper?._reclip?.addListener(_markNeedsClip);
   }
 
   @override
   void detach() {
-    _clipper?.removeListener(_markNeedsClip);
+    _clipper?._reclip?.removeListener(_markNeedsClip);
     super.detach();
   }
 
@@ -2294,14 +2273,11 @@ class RenderFittedBox extends RenderProxyBox {
     AlignmentGeometry alignment = Alignment.center,
     TextDirection textDirection,
     RenderBox child,
-    Clip clipBehavior = Clip.none,
   }) : assert(fit != null),
        assert(alignment != null),
-       assert(clipBehavior != null),
        _fit = fit,
        _alignment = alignment,
        _textDirection = textDirection,
-       _clipBehavior = clipBehavior,
        super(child);
 
   Alignment _resolvedAlignment;
@@ -2378,20 +2354,6 @@ class RenderFittedBox extends RenderProxyBox {
   bool _hasVisualOverflow;
   Matrix4 _transform;
 
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.none], and must not be null.
-  Clip get clipBehavior => _clipBehavior;
-  Clip _clipBehavior = Clip.none;
-  set clipBehavior(Clip value) {
-    assert(value != null);
-    if (value != _clipBehavior) {
-      _clipBehavior = value;
-      markNeedsPaint();
-      markNeedsSemanticsUpdate();
-    }
-  }
-
   void _clearPaintData() {
     _hasVisualOverflow = null;
     _transform = null;
@@ -2437,9 +2399,9 @@ class RenderFittedBox extends RenderProxyBox {
       return;
     _updatePaintData();
     if (child != null) {
-      if (_hasVisualOverflow && clipBehavior != Clip.none)
+      if (_hasVisualOverflow)
         layer = context.pushClipRect(needsCompositing, offset, Offset.zero & size, _paintChildWithTransform,
-            oldLayer: layer is ClipRectLayer ? layer as ClipRectLayer : null, clipBehavior: clipBehavior);
+            oldLayer: layer is ClipRectLayer ? layer as ClipRectLayer : null);
       else
         layer = _paintChildWithTransform(context, offset);
     }
@@ -2697,36 +2659,29 @@ class RenderPointerListener extends RenderProxyBoxWithHitTestBehavior {
 ///
 ///  * [MouseRegion], a widget that listens to hover events using
 ///    [RenderMouseRegion].
-class RenderMouseRegion extends RenderProxyBox implements MouseTrackerAnnotation {
+class RenderMouseRegion extends RenderProxyBox {
   /// Creates a render object that forwards pointer events to callbacks.
   ///
   /// All parameters are optional. By default this method creates an opaque
-  /// mouse region with no callbacks and cursor being [MouseCursor.defer]. The
-  /// [cursor] must not be null.
+  /// mouse region with no callbacks.
   RenderMouseRegion({
     PointerEnterEventListener onEnter,
     PointerHoverEventListener onHover,
     PointerExitEventListener onExit,
-    MouseCursor cursor = MouseCursor.defer,
     bool opaque = true,
     RenderBox child,
   }) : assert(opaque != null),
-       assert(cursor != null),
        _onEnter = onEnter,
        _onHover = onHover,
        _onExit = onExit,
-       _cursor = cursor,
        _opaque = opaque,
        _annotationIsActive = false,
-       super(child);
-
-  @protected
-  @override
-  bool hitTestSelf(Offset position) => true;
-
-  @override
-  bool hitTest(BoxHitTestResult result, { @required Offset position }) {
-    return super.hitTest(result, position: position) && _opaque;
+       super(child) {
+    _hoverAnnotation = MouseTrackerAnnotation(
+      onEnter: _handleEnter,
+      onHover: _handleHover,
+      onExit: _handleExit,
+    );
   }
 
   /// Whether this object should prevent [RenderMouseRegion]s visually behind it
@@ -2748,53 +2703,77 @@ class RenderMouseRegion extends RenderProxyBox implements MouseTrackerAnnotation
   set opaque(bool value) {
     if (_opaque != value) {
       _opaque = value;
-      // A repaint is needed in order to propagate the new value to
-      // AnnotatedRegionLayer via [paint].
       _markPropertyUpdated(mustRepaint: true);
     }
   }
 
-  @override
+  /// Called when a mouse pointer starts being contained by the region (with or
+  /// without buttons pressed) for any reason.
+  ///
+  /// This callback is always matched by a later [onExit].
+  ///
+  /// See also:
+  ///
+  ///  * [MouseRegion.onEnter], which uses this callback.
   PointerEnterEventListener get onEnter => _onEnter;
-  PointerEnterEventListener _onEnter;
   set onEnter(PointerEnterEventListener value) {
     if (_onEnter != value) {
       _onEnter = value;
       _markPropertyUpdated(mustRepaint: false);
     }
   }
+  PointerEnterEventListener _onEnter;
+  void _handleEnter(PointerEnterEvent event) {
+    if (_onEnter != null)
+      _onEnter(event);
+  }
 
-  @override
+  /// Called when a pointer changes position without buttons pressed and the end
+  /// position is within the region.
   PointerHoverEventListener get onHover => _onHover;
-  PointerHoverEventListener _onHover;
   set onHover(PointerHoverEventListener value) {
     if (_onHover != value) {
       _onHover = value;
       _markPropertyUpdated(mustRepaint: false);
     }
   }
+  PointerHoverEventListener _onHover;
+  void _handleHover(PointerHoverEvent event) {
+    if (_onHover != null)
+      _onHover(event);
+  }
 
-  @override
+  /// Called when a pointer is no longer contained by the region (with or
+  /// without buttons pressed) for any reason.
+  ///
+  /// This callback is always matched by an earlier [onEnter].
+  ///
+  /// See also:
+  ///
+  ///  * [MouseRegion.onExit], which uses this callback, but is not triggered in
+  ///    certain cases and does not always match its earier [MouseRegion.onEnter].
   PointerExitEventListener get onExit => _onExit;
-  PointerExitEventListener _onExit;
   set onExit(PointerExitEventListener value) {
     if (_onExit != value) {
       _onExit = value;
       _markPropertyUpdated(mustRepaint: false);
     }
   }
-
-  @override
-  MouseCursor get cursor => _cursor;
-  MouseCursor _cursor;
-  set cursor(MouseCursor value) {
-    if (_cursor != value) {
-      _cursor = value;
-      // A repaint is needed in order to trigger a device update of
-      // [MouseTracker] so that this new value can be found.
-      _markPropertyUpdated(mustRepaint: true);
-    }
+  PointerExitEventListener _onExit;
+  void _handleExit(PointerExitEvent event) {
+    if (_onExit != null)
+      _onExit(event);
   }
+
+  // Object used for annotation of the layer used for hover hit detection.
+  MouseTrackerAnnotation _hoverAnnotation;
+
+  /// Object used for annotation of the layer used for hover hit detection.
+  ///
+  /// This is only public to allow for testing of Listener widgets. Do not call
+  /// in other contexts.
+  @visibleForTesting
+  MouseTrackerAnnotation get hoverAnnotation => _hoverAnnotation;
 
   // Call this method when a property has changed and might affect the
   // `_annotationIsActive` bit.
@@ -2811,7 +2790,6 @@ class RenderMouseRegion extends RenderProxyBox implements MouseTrackerAnnotation
         _onEnter != null ||
         _onHover != null ||
         _onExit != null ||
-        _cursor != MouseCursor.defer ||
         opaque
       ) && RendererBinding.instance.mouseTracker.mouseIsConnected;
     _setAnnotationIsActive(newAnnotationIsActive);
@@ -2819,7 +2797,6 @@ class RenderMouseRegion extends RenderProxyBox implements MouseTrackerAnnotation
       markNeedsPaint();
   }
 
-  bool _annotationIsActive = false;
   void _setAnnotationIsActive(bool value) {
     final bool annotationWasActive = _annotationIsActive;
     _annotationIsActive = value;
@@ -2847,6 +2824,27 @@ class RenderMouseRegion extends RenderProxyBox implements MouseTrackerAnnotation
     super.detach();
   }
 
+  bool _annotationIsActive;
+
+  @override
+  bool get needsCompositing => super.needsCompositing || _annotationIsActive;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (_annotationIsActive) {
+      // Annotated region layers are not retained because they do not create engine layers.
+      final AnnotatedRegionLayer<MouseTrackerAnnotation> layer = AnnotatedRegionLayer<MouseTrackerAnnotation>(
+        _hoverAnnotation,
+        size: size,
+        offset: offset,
+        opaque: opaque,
+      );
+      context.pushLayer(layer, super.paint, offset);
+    } else {
+      super.paint(context, offset);
+    }
+  }
+
   @override
   void performResize() {
     size = constraints.biggest;
@@ -2864,7 +2862,6 @@ class RenderMouseRegion extends RenderProxyBox implements MouseTrackerAnnotation
       },
       ifEmpty: '<none>',
     ));
-    properties.add(DiagnosticsProperty<MouseCursor>('cursor', cursor, defaultValue: MouseCursor.defer));
     properties.add(DiagnosticsProperty<bool>('opaque', opaque, defaultValue: true));
   }
 }
@@ -4917,7 +4914,7 @@ class RenderFollowerLayer extends RenderProxyBox {
   ///
   /// When the render object is not linked, then: if [showWhenUnlinked] is true,
   /// the child is visible and not repositioned; if it is false, then child is
-  /// hidden, and its hit testing is also disabled.
+  /// hidden.
   bool get showWhenUnlinked => _showWhenUnlinked;
   bool _showWhenUnlinked;
   set showWhenUnlinked(bool value) {
@@ -4965,9 +4962,6 @@ class RenderFollowerLayer extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, { Offset position }) {
-    // Disables the hit testing if this render object is hidden.
-    if (link.leader == null && !showWhenUnlinked)
-      return false;
     // RenderFollowerLayer objects don't check if they are
     // themselves hit, because it's confusing to think about
     // how the untransformed size and the child's transformed

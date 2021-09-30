@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/widgets.dart';
 
 import 'list_tile.dart';
@@ -311,7 +309,6 @@ class RadioListTile<T> extends StatelessWidget {
     @required this.value,
     @required this.groupValue,
     @required this.onChanged,
-    this.toggleable = false,
     this.activeColor,
     this.title,
     this.subtitle,
@@ -320,14 +317,10 @@ class RadioListTile<T> extends StatelessWidget {
     this.secondary,
     this.selected = false,
     this.controlAffinity = ListTileControlAffinity.platform,
-    this.autofocus = false,
-
-  }) : assert(toggleable != null),
-       assert(isThreeLine != null),
+  }) : assert(isThreeLine != null),
        assert(!isThreeLine || subtitle != null),
        assert(selected != null),
        assert(controlAffinity != null),
-       assert(autofocus != null),
        super(key: key);
 
   /// The value represented by this radio button.
@@ -367,62 +360,6 @@ class RadioListTile<T> extends StatelessWidget {
   /// )
   /// ```
   final ValueChanged<T> onChanged;
-
-  /// Set to true if this radio list tile is allowed to be returned to an
-  /// indeterminate state by selecting it again when selected.
-  ///
-  /// To indicate returning to an indeterminate state, [onChanged] will be
-  /// called with null.
-  ///
-  /// If true, [onChanged] can be called with [value] when selected while
-  /// [groupValue] != [value], or with null when selected again while
-  /// [groupValue] == [value].
-  ///
-  /// If false, [onChanged] will be called with [value] when it is selected
-  /// while [groupValue] != [value], and only by selecting another radio button
-  /// in the group (i.e. changing the value of [groupValue]) can this radio
-  /// list tile be unselected.
-  ///
-  /// The default is false.
-  ///
-  /// {@tool dartpad --template=stateful_widget_scaffold}
-  /// This example shows how to enable deselecting a radio button by setting the
-  /// [toggleable] attribute.
-  ///
-  /// ```dart
-  /// int groupValue;
-  /// static const List<String> selections = <String>[
-  ///   'Hercules Mulligan',
-  ///   'Eliza Hamilton',
-  ///   'Philip Schuyler',
-  ///   'Maria Reynolds',
-  ///   'Samuel Seabury',
-  /// ];
-  ///
-  /// @override
-  /// Widget build(BuildContext context) {
-  ///   return Scaffold(
-  ///     body: ListView.builder(
-  ///       itemBuilder: (context, index) {
-  ///         return RadioListTile<int>(
-  ///           value: index,
-  ///           groupValue: groupValue,
-  ///           toggleable: true,
-  ///           title: Text(selections[index]),
-  ///           onChanged: (int value) {
-  ///             setState(() {
-  ///               groupValue = value;
-  ///             });
-  ///           },
-  ///         );
-  ///       },
-  ///       itemCount: selections.length,
-  ///     ),
-  ///   );
-  /// }
-  /// ```
-  /// {@end-tool}
-  final bool toggleable;
 
   /// The color to use when this radio button is selected.
   ///
@@ -468,9 +405,6 @@ class RadioListTile<T> extends StatelessWidget {
   /// Where to place the control relative to the text.
   final ListTileControlAffinity controlAffinity;
 
-  /// {@macro flutter.widgets.Focus.autofocus}
-  final bool autofocus;
-
   /// Whether this radio button is checked.
   ///
   /// To control this value, set [value] and [groupValue] appropriately.
@@ -482,10 +416,8 @@ class RadioListTile<T> extends StatelessWidget {
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
-      toggleable: toggleable,
       activeColor: activeColor,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      autofocus: autofocus,
     );
     Widget leading, trailing;
     switch (controlAffinity) {
@@ -510,17 +442,8 @@ class RadioListTile<T> extends StatelessWidget {
           isThreeLine: isThreeLine,
           dense: dense,
           enabled: onChanged != null,
-          onTap: onChanged != null ? () {
-            if (toggleable && checked) {
-              onChanged(null);
-              return;
-            }
-            if (!checked) {
-              onChanged(value);
-            }
-          } : null,
+          onTap: onChanged != null  && !checked ? () { onChanged(value); } : null,
           selected: selected,
-          autofocus: autofocus,
         ),
       ),
     );

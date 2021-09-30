@@ -28,7 +28,5 @@
   "cutButtonLabel": "Izreži",
   "copyButtonLabel": "Kopiraj",
   "pasteButtonLabel": "Prilepi",
-  "selectAllButtonLabel": "Izberi vse",
-  "tabSemanticsLabel": "Zavihek $tabIndex od $tabCount",
-  "modalBarrierDismissLabel": "Opusti"
+  "selectAllButtonLabel": "Izberi vse"
 }

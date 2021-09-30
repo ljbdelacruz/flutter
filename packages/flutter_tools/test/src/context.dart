@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io' as io;
 
 import 'package:flutter_tools/src/android/android_workflow.dart';
 import 'package:flutter_tools/src/base/bot_detector.dart';
@@ -28,6 +29,7 @@ import 'package:flutter_tools/src/ios/simulators.dart';
 import 'package:flutter_tools/src/ios/xcodeproj.dart';
 import 'package:flutter_tools/src/persistent_tool_state.dart';
 import 'package:flutter_tools/src/project.dart';
+import 'package:flutter_tools/src/reporting/github_template.dart';
 import 'package:flutter_tools/src/reporting/reporting.dart';
 import 'package:flutter_tools/src/version.dart';
 import 'package:flutter_tools/src/globals.dart' as globals;
@@ -107,7 +109,7 @@ void testUsingContext(
           AnsiTerminal: () => AnsiTerminal(platform: globals.platform, stdio: globals.stdio),
           Config: () => buildConfig(globals.fs),
           DeviceManager: () => FakeDeviceManager(),
-          Doctor: () => FakeDoctor(globals.logger),
+          Doctor: () => FakeDoctor(),
           FlutterVersion: () => MockFlutterVersion(),
           HttpClient: () => MockHttpClient(),
           IOSSimulatorUtils: () {
@@ -125,12 +127,12 @@ void testUsingContext(
           SimControl: () => MockSimControl(),
           Usage: () => FakeUsage(),
           XcodeProjectInterpreter: () => FakeXcodeProjectInterpreter(),
-          FileSystem: () => LocalFileSystemBlockingSetCurrentDirectory(),
+          FileSystem: () => const LocalFileSystemBlockingSetCurrentDirectory(),
           TimeoutConfiguration: () => const TimeoutConfiguration(),
           PlistParser: () => FakePlistParser(),
           Signals: () => FakeSignals(),
           Pub: () => ThrowingPub(), // prevent accidentally using pub.
-          CrashReporter: () => MockCrashReporter(),
+          GitHubTemplateCreator: () => MockGitHubTemplateCreator(),
           TemplateRenderer: () => const MustacheTemplateRenderer(),
         },
         body: () {
@@ -157,8 +159,8 @@ void testUsingContext(
               rethrow;
             }
           }, onError: (Object error, StackTrace stackTrace) { // ignore: deprecated_member_use
-            print(error);
-            print(stackTrace);
+            io.stdout.writeln(error);
+            io.stdout.writeln(stackTrace);
             _printBufferedErrors(context);
             throw error;
           });
@@ -259,8 +261,6 @@ class FakeAndroidLicenseValidator extends AndroidLicenseValidator {
 }
 
 class FakeDoctor extends Doctor {
-  FakeDoctor(Logger logger) : super(logger: logger);
-
   // True for testing.
   @override
   bool get canListAnything => true;
@@ -320,9 +320,6 @@ class FakeOperatingSystemUtils implements OperatingSystemUtils {
 
   @override
   bool verifyGzip(File gzippedFile) => true;
-
-  @override
-  Stream<List<int>> gzipLevel1Stream(Stream<List<int>> stream) => stream;
 
   @override
   String get name => 'fake OS name and version';
@@ -396,8 +393,8 @@ class FakeXcodeProjectInterpreter implements XcodeProjectInterpreter {
 
   @override
   Future<Map<String, String>> getBuildSettings(
-    String projectPath, {
-    String scheme,
+    String projectPath,
+    String target, {
     Duration timeout = const Duration(minutes: 1),
   }) async {
     return <String, String>{};
@@ -431,7 +428,7 @@ class MockClock extends Mock implements SystemClock {}
 
 class MockHttpClient extends Mock implements HttpClient {}
 
-class MockCrashReporter extends Mock implements CrashReporter {}
+class MockGitHubTemplateCreator extends Mock implements GitHubTemplateCreator {}
 
 class FakePlistParser implements PlistParser {
   @override
@@ -442,9 +439,7 @@ class FakePlistParser implements PlistParser {
 }
 
 class LocalFileSystemBlockingSetCurrentDirectory extends LocalFileSystem {
-  LocalFileSystemBlockingSetCurrentDirectory() : super.test(
-    signals: LocalSignals.instance,
-  );
+  const LocalFileSystemBlockingSetCurrentDirectory();
 
   @override
   set currentDirectory(dynamic value) {

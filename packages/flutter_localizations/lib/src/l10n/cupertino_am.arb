@@ -18,7 +18,5 @@
   "cutButtonLabel": "ቁረጥ",
   "copyButtonLabel": "ቅዳ",
   "pasteButtonLabel": "ለጥፍ",
-  "selectAllButtonLabel": "ሁሉንም ምረጥ",
-  "tabSemanticsLabel": "ትር $tabIndex ከ$tabCount",
-  "modalBarrierDismissLabel": "አሰናብት"
+  "selectAllButtonLabel": "ሁሉንም ምረጥ"
 }

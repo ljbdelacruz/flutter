@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -121,9 +119,9 @@ void main() {
     await tester.pumpWidget(
       Flow(
         delegate: DuplicatePainterOpacityFlowDelegate(1.0),
-        children: const <Widget>[
-          SizedBox(width: 100.0, height: 100.0),
-          SizedBox(width: 100.0, height: 100.0),
+        children: <Widget>[
+          Container(width: 100.0, height: 100.0),
+          Container(width: 100.0, height: 100.0),
         ],
       ),
     );
@@ -144,8 +142,8 @@ void main() {
     await tester.pumpWidget(
       Flow(
         delegate: OpacityFlowDelegate(opacity),
-        children: const <Widget>[
-          SizedBox(width: 100.0, height: 100.0),
+        children: <Widget>[
+          Container(width: 100.0, height: 100.0),
         ],
       ),
     );

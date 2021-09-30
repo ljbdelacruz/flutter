@@ -23,7 +23,5 @@
   "cutButtonLabel": "Izgriezt",
   "copyButtonLabel": "Kopēt",
   "pasteButtonLabel": "Ielīmēt",
-  "selectAllButtonLabel": "Atlasīt visu",
-  "tabSemanticsLabel": "$tabIndex. cilne no $tabCount",
-  "modalBarrierDismissLabel": "Nerādīt"
+  "selectAllButtonLabel": "Atlasīt visu"
 }

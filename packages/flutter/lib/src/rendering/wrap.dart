@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'box.dart';
@@ -103,9 +101,8 @@ class WrapParentData extends ContainerBoxParentData<RenderBox> {
 ///
 /// The runs themselves are then positioned in the cross axis according to the
 /// [runSpacing] and [runAlignment].
-class RenderWrap extends RenderBox
-    with ContainerRenderObjectMixin<RenderBox, WrapParentData>,
-         RenderBoxContainerDefaultsMixin<RenderBox, WrapParentData> {
+class RenderWrap extends RenderBox with ContainerRenderObjectMixin<RenderBox, WrapParentData>,
+                                        RenderBoxContainerDefaultsMixin<RenderBox, WrapParentData> {
   /// Creates a wrap render object.
   ///
   /// By default, the wrap layout is horizontal and both the children and the
@@ -120,14 +117,12 @@ class RenderWrap extends RenderBox
     WrapCrossAlignment crossAxisAlignment = WrapCrossAlignment.start,
     TextDirection textDirection,
     VerticalDirection verticalDirection = VerticalDirection.down,
-    Clip clipBehavior = Clip.none,
   }) : assert(direction != null),
        assert(alignment != null),
        assert(spacing != null),
        assert(runAlignment != null),
        assert(runSpacing != null),
        assert(crossAxisAlignment != null),
-       assert(clipBehavior != null),
        _direction = direction,
        _alignment = alignment,
        _spacing = spacing,
@@ -135,8 +130,7 @@ class RenderWrap extends RenderBox
        _runSpacing = runSpacing,
        _crossAxisAlignment = crossAxisAlignment,
        _textDirection = textDirection,
-       _verticalDirection = verticalDirection,
-       _clipBehavior = clipBehavior {
+       _verticalDirection = verticalDirection {
     addAll(children);
   }
 
@@ -332,20 +326,6 @@ class RenderWrap extends RenderBox
     }
   }
 
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.none], and must not be null.
-  Clip get clipBehavior => _clipBehavior;
-  Clip _clipBehavior = Clip.none;
-  set clipBehavior(Clip value) {
-    assert(value != null);
-    if (value != _clipBehavior) {
-      _clipBehavior = value;
-      markNeedsPaint();
-      markNeedsSemanticsUpdate();
-    }
-  }
-
   bool get _debugHasNecessaryDirections {
     assert(direction != null);
     assert(alignment != null);
@@ -403,6 +383,7 @@ class RenderWrap extends RenderBox
 
   double _computeIntrinsicHeightForWidth(double width) {
     assert(direction == Axis.horizontal);
+    int runCount = 0;
     double height = 0.0;
     double runWidth = 0.0;
     double runHeight = 0.0;
@@ -411,9 +392,11 @@ class RenderWrap extends RenderBox
     while (child != null) {
       final double childWidth = child.getMaxIntrinsicWidth(double.infinity);
       final double childHeight = child.getMaxIntrinsicHeight(childWidth);
-      // There must be at least one child before we move on to the next run.
-      if (childCount > 0 && runWidth + childWidth + spacing > width) {
-        height += runHeight + runSpacing;
+      if (runWidth + childWidth > width) {
+        height += runHeight;
+        if (runCount > 0)
+          height += runSpacing;
+        runCount += 1;
         runWidth = 0.0;
         runHeight = 0.0;
         childCount = 0;
@@ -425,12 +408,14 @@ class RenderWrap extends RenderBox
       childCount += 1;
       child = childAfter(child);
     }
-    height += runHeight;
+    if (childCount > 0)
+      height += runHeight + runSpacing;
     return height;
   }
 
   double _computeIntrinsicWidthForHeight(double height) {
     assert(direction == Axis.vertical);
+    int runCount = 0;
     double width = 0.0;
     double runHeight = 0.0;
     double runWidth = 0.0;
@@ -439,9 +424,11 @@ class RenderWrap extends RenderBox
     while (child != null) {
       final double childHeight = child.getMaxIntrinsicHeight(double.infinity);
       final double childWidth = child.getMaxIntrinsicWidth(childHeight);
-      // There must be at least one child before we move on to the next run.
-      if (childCount > 0 && runHeight + childHeight + spacing > height) {
-        width += runWidth + runSpacing;
+      if (runHeight + childHeight > height) {
+        width += runWidth;
+        if (runCount > 0)
+          width += runSpacing;
+        runCount += 1;
         runHeight = 0.0;
         runWidth = 0.0;
         childCount = 0;
@@ -453,7 +440,8 @@ class RenderWrap extends RenderBox
       childCount += 1;
       child = childAfter(child);
     }
-    width += runWidth;
+    if (childCount > 0)
+      width += runWidth + runSpacing;
     return width;
   }
 
@@ -769,8 +757,8 @@ class RenderWrap extends RenderBox
   void paint(PaintingContext context, Offset offset) {
     // TODO(ianh): move the debug flex overflow paint logic somewhere common so
     // it can be reused here
-    if (_hasVisualOverflow && clipBehavior != Clip.none)
-      context.pushClipRect(needsCompositing, offset, Offset.zero & size, defaultPaint, clipBehavior: clipBehavior);
+    if (_hasVisualOverflow)
+      context.pushClipRect(needsCompositing, offset, Offset.zero & size, defaultPaint);
     else
       defaultPaint(context, offset);
   }

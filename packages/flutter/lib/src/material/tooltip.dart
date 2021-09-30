@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
@@ -265,8 +263,7 @@ class _TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
 
   /// Shows the tooltip if it is not already visible.
   ///
-  /// Returns `false` when the tooltip was already visible or if the context has
-  /// become null.
+  /// Returns `false` when the tooltip was already visible.
   bool ensureTooltipVisible() {
     _showTimer?.cancel();
     _showTimer = null;
@@ -337,7 +334,6 @@ class _TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     if (_entry != null) {
       _hideTooltip(immediately: true);
     }
-    _showTimer?.cancel();
     super.deactivate();
   }
 

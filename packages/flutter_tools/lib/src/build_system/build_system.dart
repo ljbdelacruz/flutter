@@ -8,18 +8,18 @@ import 'package:async/async.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 import 'package:meta/meta.dart';
+import 'package:platform/platform.dart';
 import 'package:pool/pool.dart';
 import 'package:process/process.dart';
 
 import '../artifacts.dart';
 import '../base/file_system.dart';
 import '../base/logger.dart';
-import '../base/platform.dart';
 import '../base/utils.dart';
 import '../cache.dart';
 import '../convert.dart';
 import 'exceptions.dart';
-import 'file_store.dart';
+import 'file_hash_store.dart';
 import 'source.dart';
 
 export 'source.dart';
@@ -48,9 +48,8 @@ class BuildSystemConfig {
 /// of at least one of the environment values and zero or more local values.
 ///
 /// To determine if the action for a target needs to be executed, the
-/// [BuildSystem] computes a key of the file contents for both inputs and
-/// outputs. This is tracked separately in the [FileStore]. The key may
-/// be either an md5 hash of the file contents or a timestamp.
+/// [BuildSystem] performs a hash of the file contents for both inputs and
+/// outputs. This is tracked separately in the [FileHashStore].
 ///
 /// A Target has both implicit and explicit inputs and outputs. Only the
 /// later are safe to evaluate before invoking the [buildAction]. For example,
@@ -133,12 +132,6 @@ abstract class Target {
 
   /// A list of zero or more depfiles, located directly under {BUILD_DIR}.
   List<String> get depfiles => const <String>[];
-
-  /// Whether this target can be executed with the given [environment].
-  ///
-  /// Returning `true` will cause [build] to be skipped. This is equivalent
-  /// to a build that produces no outputs.
-  bool canSkip(Environment environment) => false;
 
   /// The action which performs this build step.
   Future<void> build(Environment environment);
@@ -291,8 +284,6 @@ abstract class Target {
 ///    }
 class Environment {
   /// Create a new [Environment] object.
-  ///
-  /// [engineVersion] should be set to null for local engine builds.
   factory Environment({
     @required Directory projectDir,
     @required Directory outputDir,
@@ -302,10 +293,8 @@ class Environment {
     @required Logger logger,
     @required Artifacts artifacts,
     @required ProcessManager processManager,
-    @required String engineVersion,
     Directory buildDir,
     Map<String, String> defines = const <String, String>{},
-    Map<String, String> inputs = const <String, String>{},
   }) {
     // Compute a unique hash of this build's particular environment.
     // Sort the keys by key so that the result is stable. We always
@@ -313,10 +302,6 @@ class Environment {
     String buildPrefix;
     final List<String> keys = defines.keys.toList()..sort();
     final StringBuffer buffer = StringBuffer();
-    // The engine revision is `null` for local or custom engines.
-    if (engineVersion != null) {
-      buffer.write(engineVersion);
-    }
     for (final String key in keys) {
       buffer.write(key);
       buffer.write(defines[key]);
@@ -340,15 +325,12 @@ class Environment {
       logger: logger,
       artifacts: artifacts,
       processManager: processManager,
-      engineVersion: engineVersion,
-      inputs: inputs,
     );
   }
 
   /// Create a new [Environment] object for unit testing.
   ///
   /// Any directories not provided will fallback to a [testDirectory]
-  @visibleForTesting
   factory Environment.test(Directory testDirectory, {
     Directory projectDir,
     Directory outputDir,
@@ -356,8 +338,6 @@ class Environment {
     Directory flutterRootDir,
     Directory buildDir,
     Map<String, String> defines = const <String, String>{},
-    Map<String, String> inputs = const <String, String>{},
-    String engineVersion,
     @required FileSystem fileSystem,
     @required Logger logger,
     @required Artifacts artifacts,
@@ -370,12 +350,10 @@ class Environment {
       flutterRootDir: flutterRootDir ?? testDirectory,
       buildDir: buildDir,
       defines: defines,
-      inputs: inputs,
       fileSystem: fileSystem,
       logger: logger,
       artifacts: artifacts,
       processManager: processManager,
-      engineVersion: engineVersion,
     );
   }
 
@@ -391,8 +369,6 @@ class Environment {
     @required this.logger,
     @required this.fileSystem,
     @required this.artifacts,
-    @required this.engineVersion,
-    @required this.inputs,
   });
 
   /// The [Source] value which is substituted with the path to [projectDir].
@@ -418,11 +394,8 @@ class Environment {
 
   /// The `BUILD_DIR` environment variable.
   ///
-  /// The root of the output directory where build step intermediates and
-  /// outputs are written. Current usages of assemble configure ths to be
-  /// a unique directory under `.dart_tool/flutter_build`, though it can
-  /// be placed anywhere. The uniqueness is only enforced by callers, and
-  /// is currently done by hashing the build configuration.
+  /// Defaults to `{PROJECT_ROOT}/build`. The root of the output directory where
+  /// build step intermediates and outputs are written.
   final Directory buildDir;
 
   /// The `CACHE_DIR` environment variable.
@@ -447,16 +420,6 @@ class Environment {
   /// which prevents the config from leaking into different builds.
   final Map<String, String> defines;
 
-  /// Additional input files passed to the build targets.
-  ///
-  /// Unlike [defines], values set here do not force a new build configuration.
-  /// This is useful for passing file inputs that may have changing paths
-  /// without running builds from scratch.
-  ///
-  /// It is the responsibility of the [Target] to declare that an input was
-  /// used in an output depfile.
-  final Map<String, String> inputs;
-
   /// The root build directory shared by all builds.
   final Directory rootBuildDir;
 
@@ -467,9 +430,6 @@ class Environment {
   final Artifacts artifacts;
 
   final FileSystem fileSystem;
-
-  /// The version of the current engine, or `null` if built with a local engine.
-  final String engineVersion;
 }
 
 /// The result information from the build system.
@@ -492,30 +452,8 @@ class BuildResult {
 }
 
 /// The build system is responsible for invoking and ordering [Target]s.
-abstract class BuildSystem {
-  /// Const constructor to allow subclasses to be const.
-  const BuildSystem();
-
-  /// Build [target] and all of its dependencies.
-  Future<BuildResult> build(
-    Target target,
-    Environment environment, {
-    BuildSystemConfig buildSystemConfig = const BuildSystemConfig(),
-  });
-
-  /// Perform an incremental build of [target] and all of its dependencies.
-  ///
-  /// If [previousBuild] is not provided, a new incremental build is
-  /// initialized.
-  Future<BuildResult> buildIncremental(
-    Target target,
-    Environment environment,
-    BuildResult previousBuild,
-  );
-}
-
-class FlutterBuildSystem extends BuildSystem {
-  const FlutterBuildSystem({
+class BuildSystem {
+  const BuildSystem({
     @required FileSystem fileSystem,
     @required Platform platform,
     @required Logger logger,
@@ -527,7 +465,7 @@ class FlutterBuildSystem extends BuildSystem {
   final Platform _platform;
   final Logger _logger;
 
-  @override
+  /// Build `target` and all of its dependencies.
   Future<BuildResult> build(
     Target target,
     Environment environment, {
@@ -536,10 +474,10 @@ class FlutterBuildSystem extends BuildSystem {
     environment.buildDir.createSync(recursive: true);
     environment.outputDir.createSync(recursive: true);
 
-    // Load file store from previous builds.
-    final File cacheFile = environment.buildDir.childFile(FileStore.kFileCache);
-    final FileStore fileCache = FileStore(
-      cacheFile: cacheFile,
+    // Load file hash store from previous builds.
+    final FileHashStore fileCache = FileHashStore(
+      environment: environment,
+      fileSystem: _fileSystem,
       logger: _logger,
     )..initialize();
 
@@ -581,12 +519,6 @@ class FlutterBuildSystem extends BuildSystem {
                      path.contains('.dart_tool');
       });
     }
-    trackSharedBuildDirectory(
-      environment, _fileSystem, buildInstance.outputFiles,
-    );
-    environment.buildDir.childFile('outputs.json')
-      .writeAsStringSync(json.encode(buildInstance.outputFiles.keys.toList()));
-
     return BuildResult(
       success: passed,
       exceptions: buildInstance.exceptionMeasurements,
@@ -596,107 +528,6 @@ class FlutterBuildSystem extends BuildSystem {
       outputFiles: buildInstance.outputFiles.values.toList()
           ..sort((File a, File b) => a.path.compareTo(b.path)),
     );
-  }
-
-  static final Expando<FileStore> _incrementalFileStore = Expando<FileStore>();
-
-  @override
-  Future<BuildResult> buildIncremental(
-    Target target,
-    Environment environment,
-    BuildResult previousBuild,
-  ) async {
-    environment.buildDir.createSync(recursive: true);
-    environment.outputDir.createSync(recursive: true);
-
-    FileStore fileCache;
-    if (previousBuild == null || _incrementalFileStore[previousBuild] == null) {
-      final File cacheFile = environment.buildDir.childFile(FileStore.kFileCache);
-      fileCache = FileStore(
-        cacheFile: cacheFile,
-        logger: _logger,
-        strategy: FileStoreStrategy.timestamp,
-      )..initialize();
-    } else {
-      fileCache = _incrementalFileStore[previousBuild];
-    }
-    final Node node = target._toNode(environment);
-    final _BuildInstance buildInstance = _BuildInstance(
-      environment: environment,
-      fileCache: fileCache,
-      buildSystemConfig: const BuildSystemConfig(),
-      logger: _logger,
-      fileSystem: _fileSystem,
-      platform: _platform,
-    );
-    bool passed = true;
-    try {
-      passed = await buildInstance.invokeTarget(node);
-    } finally {
-      fileCache.persistIncremental();
-    }
-    final BuildResult result = BuildResult(
-      success: passed,
-      exceptions: buildInstance.exceptionMeasurements,
-      performance: buildInstance.stepTimings,
-    );
-    _incrementalFileStore[result] = fileCache;
-    return result;
-  }
-
-  /// Write the identifier of the last build into the output directory and
-  /// remove the previous build's output.
-  ///
-  /// The build identifier is the basename of the build directory where
-  /// outputs and intermediaries are written, under `.dart_tool/flutter_build`.
-  /// This is computed from a hash of the build's configuration.
-  ///
-  /// This identifier is used to perform a targeted cleanup of the last output
-  /// files, if these were not already covered by the built-in cleanup. This
-  /// cleanup is only necessary when multiple different build configurations
-  /// output to the same directory.
-  @visibleForTesting
-  void trackSharedBuildDirectory(
-    Environment environment,
-    FileSystem fileSystem,
-    Map<String, File> currentOutputs,
-  ) {
-    final String currentBuildId = fileSystem.path.basename(environment.buildDir.path);
-    final File lastBuildIdFile = environment.outputDir.childFile('.last_build_id');
-    if (!lastBuildIdFile.existsSync()) {
-      lastBuildIdFile.writeAsStringSync(currentBuildId);
-      // No config file, either output was cleaned or this is the first build.
-      return;
-    }
-    final String lastBuildId = lastBuildIdFile.readAsStringSync().trim();
-    if (lastBuildId == currentBuildId) {
-      // The last build was the same configuration as the current build
-      return;
-    }
-    // Update the output dir with the latest config.
-    lastBuildIdFile
-      ..createSync()
-      ..writeAsStringSync(currentBuildId);
-    final File outputsFile = environment.buildDir
-      .parent
-      .childDirectory(lastBuildId)
-      .childFile('outputs.json');
-
-    if (!outputsFile.existsSync()) {
-      // There is no output list. This could happen if the user manually
-      // edited .last_config or deleted .dart_tool.
-      return;
-    }
-    final List<String> lastOutputs = (json.decode(outputsFile.readAsStringSync()) as List<Object>)
-      .cast<String>();
-    for (final String lastOutput in lastOutputs) {
-      if (!currentOutputs.containsKey(lastOutput)) {
-        final File lastOutputFile = fileSystem.file(lastOutput);
-        if (lastOutputFile.existsSync()) {
-          lastOutputFile.deleteSync();
-        }
-      }
-    }
   }
 }
 
@@ -719,7 +550,7 @@ class _BuildInstance {
   final Pool resourcePool;
   final Map<String, AsyncMemoizer<bool>> pending = <String, AsyncMemoizer<bool>>{};
   final Environment environment;
-  final FileStore fileCache;
+  final FileHashStore fileCache;
   final Map<String, File> inputFiles = <String, File>{};
   final Map<String, File> outputFiles = <String, File>{};
 
@@ -741,7 +572,7 @@ class _BuildInstance {
   Future<bool> _invokeInternal(Node node) async {
     final PoolResource resource = await resourcePool.request();
     final Stopwatch stopwatch = Stopwatch()..start();
-    bool succeeded = true;
+    bool passed = true;
     bool skipped = false;
 
     // The build system produces a list of aggregate input and output
@@ -777,35 +608,27 @@ class _BuildInstance {
         skipped = true;
         logger.printTrace('Skipping target: ${node.target.name}');
         updateGraph();
-        return succeeded;
+        return passed;
       }
-      // Clear old inputs. These will be replaced with new inputs/outputs
-      // after the target is run. In the case of a runtime skip, each list
-      // must be empty to ensure the previous outputs are purged.
-      node.inputs.clear();
-      node.outputs.clear();
+      logger.printTrace('${node.target.name}: Starting due to ${node.invalidatedReasons}');
+      await node.target.build(environment);
+      logger.printTrace('${node.target.name}: Complete');
 
-      // Check if we can skip via runtime dependencies.
-      final bool runtimeSkip = node.target.canSkip(environment);
-      if (runtimeSkip) {
-        logger.printTrace('Skipping target: ${node.target.name}');
-        skipped = true;
-      } else {
-        logger.printTrace('${node.target.name}: Starting due to ${node.invalidatedReasons}');
-        await node.target.build(environment);
-        logger.printTrace('${node.target.name}: Complete');
-        node.inputs.addAll(node.target.resolveInputs(environment).sources);
-        node.outputs.addAll(node.target.resolveOutputs(environment).sources);
-      }
+      node.inputs
+        ..clear()
+        ..addAll(node.target.resolveInputs(environment).sources);
+      node.outputs
+        ..clear()
+        ..addAll(node.target.resolveOutputs(environment).sources);
 
-      // If we were missing the depfile, resolve input files after executing the
+      // If we were missing the depfile, resolve  input files after executing the
       // target so that all file hashes are up to date on the next run.
       if (node.missingDepfile) {
-        await fileCache.diffFileList(node.inputs);
+        await fileCache.hashFiles(node.inputs);
       }
 
       // Always update hashes for output files.
-      await fileCache.diffFileList(node.outputs);
+      await fileCache.hashFiles(node.outputs);
       node.target._writeStamp(node.inputs, node.outputs, environment);
       updateGraph();
 
@@ -824,7 +647,7 @@ class _BuildInstance {
       // TODO(jonahwilliams): throw specific exception for expected errors to mark
       // as non-fatal. All others should be fatal.
       node.target.clearStamp(environment);
-      succeeded = false;
+      passed = false;
       skipped = false;
       exceptionMeasurements[node.target.name] = ExceptionMeasurement(
           node.target.name, exception, stackTrace);
@@ -835,11 +658,11 @@ class _BuildInstance {
         target: node.target.name,
         elapsedMilliseconds: stopwatch.elapsedMilliseconds,
         skipped: skipped,
-        succeeded: succeeded,
+        passed: passed,
         analyicsName: node.target.analyticsName,
       );
     }
-    return succeeded;
+    return passed;
   }
 }
 
@@ -864,14 +687,14 @@ class PerformanceMeasurement {
     @required this.target,
     @required this.elapsedMilliseconds,
     @required this.skipped,
-    @required this.succeeded,
+    @required this.passed,
     @required this.analyicsName,
   });
 
   final int elapsedMilliseconds;
   final String target;
   final bool skipped;
-  final bool succeeded;
+  final bool passed;
   final String analyicsName;
 }
 
@@ -1004,16 +827,16 @@ class Node {
   /// Returns whether this target can be skipped.
   Future<bool> computeChanges(
     Environment environment,
-    FileStore fileStore,
+    FileHashStore fileHashStore,
     FileSystem fileSystem,
     Logger logger,
   ) async {
     final Set<String> currentOutputPaths = <String>{
       for (final File file in outputs) file.path,
     };
-    // For each input, first determine if we've already computed the key
-    // for it. Then collect it to be sent off for diffing as a group.
-    final List<File> sourcesToDiff = <File>[];
+    // For each input, first determine if we've already computed the hash
+    // for it. Then collect it to be sent off for hashing as a group.
+    final List<File> sourcesToHash = <File>[];
     final List<File> missingInputs = <File>[];
     for (final File file in inputs) {
       if (!file.existsSync()) {
@@ -1022,26 +845,26 @@ class Node {
       }
 
       final String absolutePath = file.path;
-      final String previousAssetKey = fileStore.previousAssetKeys[absolutePath];
-      if (fileStore.currentAssetKeys.containsKey(absolutePath)) {
-        final String currentHash = fileStore.currentAssetKeys[absolutePath];
-        if (currentHash != previousAssetKey) {
+      final String previousHash = fileHashStore.previousHashes[absolutePath];
+      if (fileHashStore.currentHashes.containsKey(absolutePath)) {
+        final String currentHash = fileHashStore.currentHashes[absolutePath];
+        if (currentHash != previousHash) {
           invalidatedReasons.add(InvalidatedReason.inputChanged);
           _dirty = true;
         }
       } else {
-        sourcesToDiff.add(file);
+        sourcesToHash.add(file);
       }
     }
 
-    // For each output, first determine if we've already computed the key
+    // For each output, first determine if we've already computed the hash
     // for it. Then collect it to be sent off for hashing as a group.
     for (final String previousOutput in previousOutputs) {
       // output paths changed.
       if (!currentOutputPaths.contains(previousOutput)) {
         _dirty = true;
         invalidatedReasons.add(InvalidatedReason.outputSetChanged);
-        // if this isn't a current output file there is no reason to compute the key.
+        // if this isn't a current output file there is no reason to compute the hash.
         continue;
       }
       final File file = fileSystem.file(previousOutput);
@@ -1051,15 +874,15 @@ class Node {
         continue;
       }
       final String absolutePath = file.path;
-      final String previousHash = fileStore.previousAssetKeys[absolutePath];
-      if (fileStore.currentAssetKeys.containsKey(absolutePath)) {
-        final String currentHash = fileStore.currentAssetKeys[absolutePath];
+      final String previousHash = fileHashStore.previousHashes[absolutePath];
+      if (fileHashStore.currentHashes.containsKey(absolutePath)) {
+        final String currentHash = fileHashStore.currentHashes[absolutePath];
         if (currentHash != previousHash) {
           invalidatedReasons.add(InvalidatedReason.outputChanged);
           _dirty = true;
         }
       } else {
-        sourcesToDiff.add(file);
+        sourcesToHash.add(file);
       }
     }
 
@@ -1073,10 +896,10 @@ class Node {
       invalidatedReasons.add(InvalidatedReason.inputMissing);
     }
 
-    // If we have files to diff, compute them asynchronously and then
+    // If we have files to hash, compute them asynchronously and then
     // update the result.
-    if (sourcesToDiff.isNotEmpty) {
-      final List<File> dirty = await fileStore.diffFileList(sourcesToDiff);
+    if (sourcesToHash.isNotEmpty) {
+      final List<File> dirty = await fileHashStore.hashFiles(sourcesToHash);
       if (dirty.isNotEmpty) {
         invalidatedReasons.add(InvalidatedReason.inputChanged);
         _dirty = true;
@@ -1092,10 +915,10 @@ enum InvalidatedReason {
   /// depfile dependencies, or if a target is incorrectly specified.
   inputMissing,
 
-  /// An input file has an updated key.
+  /// An input file has an updated hash.
   inputChanged,
 
-  /// An output file has an updated key.
+  /// An output file has an updated hash.
   outputChanged,
 
   /// An output file that is expected is missing.

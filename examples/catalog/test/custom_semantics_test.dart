@@ -18,7 +18,10 @@ void main() {
     await tester.pump();
 
     // Verify it correctly exposes its semantics.
-    final SemanticsNode semantics = tester.getSemantics(find.byType(AdjustableDropdownListTile));
+    // TODO(goderbauer): Use `SemanticsTester` after https://github.com/flutter/flutter/issues/12286.
+    final SemanticsNode semantics = tester
+        .renderObject(find.byType(AdjustableDropdownListTile))
+        .debugSemantics;
 
     expectAdjustable(semantics,
       hasIncreaseAction: true,

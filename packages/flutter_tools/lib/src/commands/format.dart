@@ -4,10 +4,9 @@
 
 import 'dart:async';
 
-import '../artifacts.dart';
 import '../base/common.dart';
 import '../base/process.dart';
-import '../globals.dart' as globals;
+import '../dart/sdk.dart';
 import '../runner/flutter_command.dart';
 
 class FormatCommand extends FlutterCommand {
@@ -61,11 +60,9 @@ class FormatCommand extends FlutterCommand {
       );
     }
 
-    final String dartSdk = globals.artifacts.getArtifactPath(Artifact.engineDartSdkPath);
-    final String dartBinary = globals.artifacts.getArtifactPath(Artifact.engineDartBinary);
+    final String dartfmt = sdkBinaryName('dartfmt');
     final List<String> command = <String>[
-      dartBinary,
-      globals.fs.path.join(dartSdk, 'bin', 'snapshots', 'dartfmt.dart.snapshot'),
+      dartfmt,
       if (boolArg('dry-run')) '-n',
       if (boolArg('machine')) '-m',
       if (argResults['line-length'] != null) '-l ${argResults['line-length']}',

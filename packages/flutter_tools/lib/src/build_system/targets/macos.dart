@@ -13,7 +13,7 @@ import '../build_system.dart';
 import '../depfile.dart';
 import '../exceptions.dart';
 import 'assets.dart';
-import 'common.dart';
+import 'dart.dart';
 import 'icon_tree_shaker.dart';
 
 /// Copy the macOS framework to the correct copy dir by invoking 'cp -R'.
@@ -56,8 +56,9 @@ abstract class UnpackMacOS extends Target {
     final Directory targetDirectory = environment
       .outputDir
       .childDirectory('FlutterMacOS.framework');
-    // Deleting this directory is required or else the FlutterMacOS module
-    // cannot be found.
+    // This is necessary because multiple different build configurations will
+    // output different files here. Build cleaning only works when the files
+    // change within a build configuration.
     if (targetDirectory.existsSync()) {
       targetDirectory.deleteSync(recursive: true);
     }
@@ -80,6 +81,7 @@ abstract class UnpackMacOS extends Target {
     final DepfileService depfileService = DepfileService(
       logger: globals.logger,
       fileSystem: globals.fs,
+      platform: globals.platform,
     );
     depfileService.writeToFile(
       Depfile(inputs, outputs),
@@ -197,7 +199,6 @@ class CompileMacOSFramework extends Target {
     }
     final String splitDebugInfo = environment.defines[kSplitDebugInfo];
     final bool dartObfuscation = environment.defines[kDartObfuscation] == 'true';
-    final List<String> extraGenSnapshotOptions = decodeDartDefines(environment.defines, kExtraGenSnapshotOptions);
     final AOTSnapshotter snapshotter = AOTSnapshotter(
       reportTimings: false,
       fileSystem: globals.fs,
@@ -216,7 +217,6 @@ class CompileMacOSFramework extends Target {
       packagesPath: environment.projectDir.childFile('.packages').path,
       splitDebugInfo: splitDebugInfo,
       dartObfuscation: dartObfuscation,
-      extraGenSnapshotOptions: extraGenSnapshotOptions,
     );
     if (result != 0) {
       throw Exception('gen shapshot failed.');
@@ -291,19 +291,21 @@ abstract class MacOSBundleFlutterAssets extends Target {
     final Directory assetDirectory = outputDirectory
       .childDirectory('Resources')
       .childDirectory('flutter_assets');
+    // This is necessary because multiple different build configurations will
+    // output different files here. Build cleaning only works when the files
+    // change within a build configuration.
+    if (assetDirectory.existsSync()) {
+      assetDirectory.deleteSync(recursive: true);
+    }
     assetDirectory.createSync(recursive: true);
-
-    final Depfile assetDepfile = await copyAssets(
-      environment,
-      assetDirectory,
-      targetPlatform: TargetPlatform.darwin_x64,
-    );
+    final Depfile depfile = await copyAssets(environment, assetDirectory);
     final DepfileService depfileService = DepfileService(
       fileSystem: globals.fs,
       logger: globals.logger,
+      platform: globals.platform,
     );
     depfileService.writeToFile(
-      assetDepfile,
+      depfile,
       environment.buildDir.childFile('flutter_assets.d'),
     );
 

@@ -2,10 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
-import 'dart:ui' show window;
+import 'dart:ui' show window, FrameTiming;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -14,7 +12,7 @@ import 'package:flutter/services.dart';
 import '../flutter_test_alternative.dart';
 import 'scheduler_tester.dart';
 
-class TestSchedulerBinding extends BindingBase with SchedulerBinding, ServicesBinding {
+class TestSchedulerBinding extends BindingBase with ServicesBinding, SchedulerBinding {
   final Map<String, List<Map<String, dynamic>>> eventsDispatched = <String, List<Map<String, dynamic>>>{};
 
   @override

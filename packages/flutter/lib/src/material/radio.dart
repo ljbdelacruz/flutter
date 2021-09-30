@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -11,7 +9,6 @@ import 'package:flutter/widgets.dart';
 
 import 'constants.dart';
 import 'debug.dart';
-import 'material_state.dart';
 import 'theme.dart';
 import 'theme_data.dart';
 import 'toggleable.dart';
@@ -111,8 +108,6 @@ class Radio<T> extends StatefulWidget {
     @required this.value,
     @required this.groupValue,
     @required this.onChanged,
-    this.mouseCursor,
-    this.toggleable = false,
     this.activeColor,
     this.focusColor,
     this.hoverColor,
@@ -121,7 +116,6 @@ class Radio<T> extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
   }) : assert(autofocus != null),
-       assert(toggleable != null),
        super(key: key);
 
   /// The value represented by this radio button.
@@ -160,83 +154,6 @@ class Radio<T> extends StatefulWidget {
   /// )
   /// ```
   final ValueChanged<T> onChanged;
-
-  /// The cursor for a mouse pointer when it enters or is hovering over the
-  /// widget.
-  ///
-  /// If [mouseCursor] is a [MaterialStateProperty<MouseCursor>],
-  /// [MaterialStateProperty.resolve] is used for the following [MaterialState]s:
-  ///
-  ///  * [MaterialState.selected].
-  ///  * [MaterialState.hovered].
-  ///  * [MaterialState.focused].
-  ///  * [MaterialState.disabled].
-  ///
-  /// If this property is null, [MaterialStateMouseCursor.clickable] will be used.
-  final MouseCursor mouseCursor;
-
-  /// Set to true if this radio button is allowed to be returned to an
-  /// indeterminate state by selecting it again when selected.
-  ///
-  /// To indicate returning to an indeterminate state, [onChanged] will be
-  /// called with null.
-  ///
-  /// If true, [onChanged] can be called with [value] when selected while
-  /// [groupValue] != [value], or with null when selected again while
-  /// [groupValue] == [value].
-  ///
-  /// If false, [onChanged] will be called with [value] when it is selected
-  /// while [groupValue] != [value], and only by selecting another radio button
-  /// in the group (i.e. changing the value of [groupValue]) can this radio
-  /// button be unselected.
-  ///
-  /// The default is false.
-  ///
-  /// {@tool dartpad --template=stateful_widget_scaffold}
-  /// This example shows how to enable deselecting a radio button by setting the
-  /// [toggleable] attribute.
-  ///
-  /// ```dart
-  /// int groupValue;
-  /// static const List<String> selections = <String>[
-  ///   'Hercules Mulligan',
-  ///   'Eliza Hamilton',
-  ///   'Philip Schuyler',
-  ///   'Maria Reynolds',
-  ///   'Samuel Seabury',
-  /// ];
-  ///
-  /// @override
-  /// Widget build(BuildContext context) {
-  ///   return Scaffold(
-  ///     body: ListView.builder(
-  ///       itemBuilder: (context, index) {
-  ///         return Row(
-  ///           mainAxisSize: MainAxisSize.min,
-  ///           crossAxisAlignment: CrossAxisAlignment.center,
-  ///           children: <Widget>[
-  ///             Radio<int>(
-  ///                 value: index,
-  ///                 groupValue: groupValue,
-  ///                 // TRY THIS: Try setting the toggleable value to false and
-  ///                 // see how that changes the behavior of the widget.
-  ///                 toggleable: true,
-  ///                 onChanged: (int value) {
-  ///                   setState(() {
-  ///                     groupValue = value;
-  ///                   });
-  ///                 }),
-  ///             Text(selections[index]),
-  ///           ],
-  ///         );
-  ///       },
-  ///       itemCount: selections.length,
-  ///     ),
-  ///   );
-  /// }
-  /// ```
-  /// {@end-tool}
-  final bool toggleable;
 
   /// The color to use when this radio button is selected.
   ///
@@ -280,24 +197,29 @@ class Radio<T> extends StatefulWidget {
 
 class _RadioState<T> extends State<Radio<T>> with TickerProviderStateMixin {
   bool get enabled => widget.onChanged != null;
-  Map<Type, Action<Intent>> _actionMap;
+  Map<LocalKey, ActionFactory> _actionMap;
 
   @override
   void initState() {
     super.initState();
-    _actionMap = <Type, Action<Intent>>{
-      ActivateIntent: CallbackAction<ActivateIntent>(
-        onInvoke: _actionHandler,
-      ),
+    _actionMap = <LocalKey, ActionFactory>{
+      ActivateAction.key: _createAction,
     };
   }
 
-  void _actionHandler(ActivateIntent intent) {
+  void _actionHandler(FocusNode node, Intent intent){
     if (widget.onChanged != null) {
       widget.onChanged(widget.value);
     }
-    final RenderObject renderObject = context.findRenderObject();
+    final RenderObject renderObject = node.context.findRenderObject();
     renderObject.sendSemanticsEvent(const TapSemanticEvent());
+  }
+
+  Action _createAction() {
+    return CallbackAction(
+      ActivateAction.key,
+      onInvoke: _actionHandler,
+    );
   }
 
   bool _focused = false;
@@ -319,13 +241,8 @@ class _RadioState<T> extends State<Radio<T>> with TickerProviderStateMixin {
   }
 
   void _handleChanged(bool selected) {
-    if (selected == null) {
-      widget.onChanged(null);
-      return;
-    }
-    if (selected) {
+    if (selected)
       widget.onChanged(widget.value);
-    }
   }
 
   @override
@@ -343,35 +260,22 @@ class _RadioState<T> extends State<Radio<T>> with TickerProviderStateMixin {
     }
     size += (widget.visualDensity ?? themeData.visualDensity).baseSizeAdjustment;
     final BoxConstraints additionalConstraints = BoxConstraints.tight(size);
-    final bool selected = widget.value == widget.groupValue;
-    final MouseCursor effectiveMouseCursor = MaterialStateProperty.resolveAs<MouseCursor>(
-      widget.mouseCursor ?? MaterialStateMouseCursor.clickable,
-      <MaterialState>{
-        if (!enabled) MaterialState.disabled,
-        if (_hovering) MaterialState.hovered,
-        if (_focused) MaterialState.focused,
-        if (selected) MaterialState.selected,
-      },
-    );
-
     return FocusableActionDetector(
       actions: _actionMap,
       focusNode: widget.focusNode,
       autofocus: widget.autofocus,
-      mouseCursor: effectiveMouseCursor,
       enabled: enabled,
       onShowFocusHighlight: _handleHighlightChanged,
       onShowHoverHighlight: _handleHoverChanged,
       child: Builder(
         builder: (BuildContext context) {
           return _RadioRenderObjectWidget(
-            selected: selected,
+            selected: widget.value == widget.groupValue,
             activeColor: widget.activeColor ?? themeData.toggleableActiveColor,
             inactiveColor: _getInactiveColor(themeData),
             focusColor: widget.focusColor ?? themeData.focusColor,
             hoverColor: widget.hoverColor ?? themeData.hoverColor,
             onChanged: enabled ? _handleChanged : null,
-            toggleable: widget.toggleable,
             additionalConstraints: additionalConstraints,
             vsync: this,
             hasFocus: _focused,
@@ -393,7 +297,6 @@ class _RadioRenderObjectWidget extends LeafRenderObjectWidget {
     @required this.hoverColor,
     @required this.additionalConstraints,
     this.onChanged,
-    @required this.toggleable,
     @required this.vsync,
     @required this.hasFocus,
     @required this.hovering,
@@ -401,7 +304,6 @@ class _RadioRenderObjectWidget extends LeafRenderObjectWidget {
        assert(activeColor != null),
        assert(inactiveColor != null),
        assert(vsync != null),
-       assert(toggleable != null),
        super(key: key);
 
   final bool selected;
@@ -412,7 +314,6 @@ class _RadioRenderObjectWidget extends LeafRenderObjectWidget {
   final Color focusColor;
   final Color hoverColor;
   final ValueChanged<bool> onChanged;
-  final bool toggleable;
   final TickerProvider vsync;
   final BoxConstraints additionalConstraints;
 
@@ -424,7 +325,6 @@ class _RadioRenderObjectWidget extends LeafRenderObjectWidget {
     focusColor: focusColor,
     hoverColor: hoverColor,
     onChanged: onChanged,
-    tristate: toggleable,
     vsync: vsync,
     additionalConstraints: additionalConstraints,
     hasFocus: hasFocus,
@@ -440,7 +340,6 @@ class _RadioRenderObjectWidget extends LeafRenderObjectWidget {
       ..focusColor = focusColor
       ..hoverColor = hoverColor
       ..onChanged = onChanged
-      ..tristate = toggleable
       ..additionalConstraints = additionalConstraints
       ..vsync = vsync
       ..hasFocus = hasFocus
@@ -456,19 +355,18 @@ class _RenderRadio extends RenderToggleable {
     Color focusColor,
     Color hoverColor,
     ValueChanged<bool> onChanged,
-    bool tristate,
     BoxConstraints additionalConstraints,
     @required TickerProvider vsync,
     bool hasFocus,
     bool hovering,
   }) : super(
          value: value,
+         tristate: false,
          activeColor: activeColor,
          inactiveColor: inactiveColor,
          focusColor: focusColor,
          hoverColor: hoverColor,
          onChanged: onChanged,
-         tristate: tristate,
          additionalConstraints: additionalConstraints,
          vsync: vsync,
          hasFocus: hasFocus,

@@ -12,7 +12,7 @@ import '../runner/flutter_command.dart';
 import '../template.dart';
 
 class IdeConfigCommand extends FlutterCommand {
-  IdeConfigCommand() {
+  IdeConfigCommand({this.hidden = false}) {
     argParser.addFlag(
       'overwrite',
       negatable: true,
@@ -57,7 +57,7 @@ class IdeConfigCommand extends FlutterCommand {
       'Currently, IntelliJ is the default (and only) IDE that may be configured.';
 
   @override
-  final bool hidden = true;
+  final bool hidden;
 
   @override
   String get invocation => '${runner.executableName} $name';
@@ -236,7 +236,6 @@ class IdeConfigCommand extends FlutterCommand {
     int generatedCount = 0;
     generatedCount += _renderTemplate(_ideName, dirPath, <String, dynamic>{
       'withRootModule': boolArg('with-root-module'),
-      'android': true,
     });
 
     globals.printStatus('Wrote $generatedCount files.');
@@ -248,13 +247,7 @@ class IdeConfigCommand extends FlutterCommand {
   }
 
   int _renderTemplate(String templateName, String dirPath, Map<String, dynamic> context) {
-    final Template template = Template(
-      _templateDirectory,
-      _templateDirectory,
-      null,
-      fileSystem: globals.fs,
-      templateManifest: null,
-    );
+    final Template template = Template(_templateDirectory, _templateDirectory, null, fileSystem: globals.fs);
     return template.render(
       globals.fs.directory(dirPath),
       context,

@@ -5,7 +5,6 @@
 import 'package:file/memory.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/cache.dart';
-import 'package:flutter_tools/src/dart/pub.dart';
 import 'package:flutter_tools/src/template.dart';
 import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:mockito/mockito.dart';
@@ -21,13 +20,7 @@ void main() {
   });
 
   test('Template.render throws ToolExit when FileSystem exception is raised', () => testbed.run(() {
-    final Template template = Template(
-      globals.fs.directory('examples'),
-      globals.fs.currentDirectory,
-      null,
-      fileSystem: globals.fs,
-      templateManifest: null,
-    );
+    final Template template = Template(globals.fs.directory('examples'), globals.fs.currentDirectory, null, fileSystem: globals.fs);
     final MockDirectory mockDirectory = MockDirectory();
     when(mockDirectory.createSync(recursive: true)).thenThrow(const FileSystemException());
 
@@ -46,13 +39,7 @@ void main() {
     sourceImage.createSync(recursive: true);
     sourceImage.writeAsStringSync('Ceci n\'est pas une pipe');
 
-    final Template template = Template(
-      templateDir,
-      templateDir,
-      imageSourceDir,
-      fileSystem: fileSystem,
-      templateManifest: null,
-    );
+    final Template template = Template(templateDir, templateDir, imageSourceDir, fileSystem: fileSystem);
     template.render(destination, <String, Object>{});
 
     final File destinationImage = destination.childFile(imageName);
@@ -64,7 +51,7 @@ void main() {
     final MemoryFileSystem fileSystem = MemoryFileSystem();
 
     // Attempting to run pub in a test throws.
-    await expectLater(Template.fromName('app', fileSystem: fileSystem, templateManifest: null),
+    await expectLater(Template.fromName('app', fileSystem: fileSystem),
       throwsUnsupportedError);
   }));
 
@@ -78,7 +65,7 @@ void main() {
     packagesFile.createSync(recursive: true);
 
     // Attempting to run pub in a test throws.
-    await expectLater(Template.fromName('app', fileSystem: fileSystem, templateManifest: null),
+    await expectLater(Template.fromName('app', fileSystem: fileSystem),
       throwsUnsupportedError);
   }));
 
@@ -90,21 +77,12 @@ void main() {
         .childDirectory('flutter_tools')
         .childFile('.packages');
     packagesFile.createSync(recursive: true);
-    packagesFile.writeAsStringSync('\n');
+    packagesFile.writeAsStringSync('flutter_template_images:file:///flutter_template_images');
 
-    when(pub.get(
-      context: PubContext.pubGet,
-      directory: anyNamed('directory'),
-    )).thenAnswer((Invocation invocation) async {
-      // Create valid package entry.
-      packagesFile.writeAsStringSync('flutter_template_images:file:///flutter_template_images');
-    });
-
-    await Template.fromName('app', fileSystem: fileSystem, templateManifest: null);
-  }, overrides: <Type, Generator>{
-    Pub: () => MockPub(),
+    // Attempting to run pub in a test throws.
+    await expectLater(Template.fromName('app', fileSystem: fileSystem),
+      throwsUnsupportedError);
   }));
 }
 
-class MockPub extends Mock implements Pub {}
 class MockDirectory extends Mock implements Directory {}

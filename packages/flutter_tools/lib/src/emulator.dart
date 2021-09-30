@@ -5,50 +5,27 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:meta/meta.dart';
-import 'package:process/process.dart';
-
 import 'android/android_emulator.dart';
 import 'android/android_sdk.dart';
-import 'android/android_workflow.dart';
 import 'base/context.dart';
-import 'base/file_system.dart';
-import 'base/logger.dart';
 import 'base/process.dart';
 import 'device.dart';
+import 'globals.dart' as globals;
 import 'ios/ios_emulators.dart';
 
 EmulatorManager get emulatorManager => context.get<EmulatorManager>();
 
 /// A class to get all available emulators.
 class EmulatorManager {
-  EmulatorManager({
-    @required AndroidSdk androidSdk,
-    @required Logger logger,
-    @required ProcessManager processManager,
-    @required AndroidWorkflow androidWorkflow,
-    @required FileSystem fileSystem,
-  }) : _androidSdk = androidSdk,
-       _processUtils = ProcessUtils(logger: logger, processManager: processManager),
-       _androidEmulators = AndroidEmulators(
-        androidSdk: androidSdk,
-        logger: logger,
-        processManager: processManager,
-        fileSystem: fileSystem,
-        androidWorkflow: androidWorkflow
-      ) {
-    _emulatorDiscoverers.add(_androidEmulators);
+  /// Constructing EmulatorManager is cheap; they only do expensive work if some
+  /// of their methods are called.
+  EmulatorManager() {
+    // Register the known discoverers.
+    _emulatorDiscoverers.add(AndroidEmulators());
+    _emulatorDiscoverers.add(IOSEmulators());
   }
 
-  final AndroidSdk _androidSdk;
-  final AndroidEmulators _androidEmulators;
-  final ProcessUtils _processUtils;
-
-  // Constructing EmulatorManager is cheap; they only do expensive work if some
-  // of their methods are called.
-  final List<EmulatorDiscovery> _emulatorDiscoverers = <EmulatorDiscovery>[
-    IOSEmulators(),
-  ];
+  final List<EmulatorDiscovery> _emulatorDiscoverers = <EmulatorDiscovery>[];
 
   Future<List<Emulator>> getEmulatorsMatching(String searchText) async {
     final List<Emulator> emulators = await getAllAvailableEmulators();
@@ -85,7 +62,7 @@ class EmulatorManager {
 
   /// Return the list of all available emulators.
   Future<CreateEmulatorResult> createEmulator({ String name }) async {
-    if (name == null || name.isEmpty) {
+    if (name == null || name == '') {
       const String autoName = 'flutter_emulator';
       // Don't use getEmulatorsMatching here, as it will only return one
       // if there's an exact match and we need all those with this prefix
@@ -100,11 +77,6 @@ class EmulatorManager {
       while (takenNames.contains(name)) {
         name = '${autoName}_${++suffix}';
       }
-    }
-    if (!_androidEmulators.canLaunchAnything) {
-      return CreateEmulatorResult(name,
-        success: false, error: 'avdmanager is missing from the Android SDK'
-      );
     }
 
     final String device = await _getPreferredAvailableDevice();
@@ -139,15 +111,17 @@ class EmulatorManager {
           .join('\n')
           .trim();
     }
-    final RunResult runResult = await _processUtils.run(<String>[
-      getAvdManagerPath(_androidSdk),
-        'create',
-        'avd',
-        '-n', name,
-        '-k', sdkId,
-        '-d', device,
-      ], environment: _androidSdk?.sdkManagerEnv,
-    );
+
+    final List<String> args = <String>[
+      getAvdManagerPath(androidSdk),
+      'create',
+      'avd',
+      '-n', name,
+      '-k', sdkId,
+      '-d', device,
+    ];
+    final RunResult runResult = processUtils.runSync(args,
+        environment: androidSdk?.sdkManagerEnv);
     return CreateEmulatorResult(
       name,
       success: runResult.exitCode == 0,
@@ -160,16 +134,15 @@ class EmulatorManager {
     'pixel',
     'pixel_xl',
   ];
-
   Future<String> _getPreferredAvailableDevice() async {
     final List<String> args = <String>[
-      getAvdManagerPath(_androidSdk),
+      getAvdManagerPath(androidSdk),
       'list',
       'device',
       '-c',
     ];
-    final RunResult runResult = await _processUtils.run(args,
-        environment: _androidSdk?.sdkManagerEnv);
+    final RunResult runResult = processUtils.runSync(args,
+        environment: androidSdk?.sdkManagerEnv);
     if (runResult.exitCode != 0) {
       return null;
     }
@@ -185,30 +158,29 @@ class EmulatorManager {
     );
   }
 
-  static final RegExp _androidApiVersion = RegExp(r';android-(\d+);');
-
+  RegExp androidApiVersion = RegExp(r';android-(\d+);');
   Future<String> _getPreferredSdkId() async {
     // It seems that to get the available list of images, we need to send a
     // request to create without the image and it'll provide us a list :-(
     final List<String> args = <String>[
-      getAvdManagerPath(_androidSdk),
+      getAvdManagerPath(androidSdk),
       'create',
       'avd',
       '-n', 'temp',
     ];
-    final RunResult runResult = await _processUtils.run(args,
-        environment: _androidSdk?.sdkManagerEnv);
+    final RunResult runResult = processUtils.runSync(args,
+        environment: androidSdk?.sdkManagerEnv);
 
     // Get the list of IDs that match our criteria
     final List<String> availableIDs = runResult.stderr
         .split('\n')
-        .where((String l) => _androidApiVersion.hasMatch(l))
+        .where((String l) => androidApiVersion.hasMatch(l))
         .where((String l) => l.contains('system-images'))
         .where((String l) => l.contains('google_apis_playstore'))
         .toList();
 
     final List<int> availableApiVersions = availableIDs
-        .map<String>((String id) => _androidApiVersion.firstMatch(id).group(1))
+        .map<String>((String id) => androidApiVersion.firstMatch(id).group(1))
         .map<int>((String apiVersion) => int.parse(apiVersion))
         .toList();
 
@@ -235,18 +207,15 @@ class EmulatorManager {
 abstract class EmulatorDiscovery {
   bool get supportsPlatform;
 
-  /// Whether this emulator discovery is capable of listing any emulators.
+  /// Whether this emulator discovery is capable of listing any emulators given the
+  /// current environment configuration.
   bool get canListAnything;
-
-  /// Whether this emulator discovery is capabale of launching new emulators.
-  bool get canLaunchAnything;
 
   Future<List<Emulator>> get emulators;
 }
 
-@immutable
 abstract class Emulator {
-  const Emulator(this.id, this.hasConfig);
+  Emulator(this.id, this.hasConfig);
 
   final String id;
   final bool hasConfig;
@@ -308,8 +277,8 @@ abstract class Emulator {
         .toList();
   }
 
-  static void printEmulators(List<Emulator> emulators, Logger logger) {
-    descriptions(emulators).forEach(logger.printStatus);
+  static void printEmulators(List<Emulator> emulators) {
+    descriptions(emulators).forEach(globals.printStatus);
   }
 }
 

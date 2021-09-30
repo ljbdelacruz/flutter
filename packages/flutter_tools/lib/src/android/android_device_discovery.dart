@@ -6,10 +6,8 @@ import 'package:meta/meta.dart';
 import 'package:process/process.dart';
 
 import '../base/common.dart';
-import '../base/file_system.dart';
 import '../base/io.dart';
 import '../base/logger.dart';
-import '../base/platform.dart';
 import '../base/process.dart';
 import '../device.dart';
 import '../globals.dart' as globals;
@@ -59,17 +57,13 @@ class AndroidDevices extends PollingDeviceDiscovery {
       )).stdout.trim();
     } on ArgumentError catch (exception) {
       throwToolExit('Unable to find "adb", check your Android SDK installation and '
-        '$kAndroidSdkRoot environment variable: ${exception.message}');
+        'ANDROID_HOME environment variable: ${exception.message}');
     } on ProcessException catch (exception) {
       throwToolExit('Unable to run "adb", check your Android SDK installation and '
-        '$kAndroidSdkRoot environment variable: ${exception.executable}');
+        'ANDROID_HOME environment variable: ${exception.executable}');
     }
     final List<AndroidDevice> devices = <AndroidDevice>[];
-    parseADBDeviceOutput(
-      text,
-      devices: devices,
-      timeoutConfiguration: timeoutConfiguration,
-    );
+    parseADBDeviceOutput(text, devices: devices);
     return devices;
   }
 
@@ -86,11 +80,7 @@ class AndroidDevices extends PollingDeviceDiscovery {
     } else {
       final String text = result.stdout;
       final List<String> diagnostics = <String>[];
-      parseADBDeviceOutput(
-        text,
-        diagnostics: diagnostics,
-        timeoutConfiguration: timeoutConfiguration,
-      );
+      parseADBDeviceOutput(text, diagnostics: diagnostics);
       return diagnostics;
     }
   }
@@ -106,12 +96,6 @@ class AndroidDevices extends PollingDeviceDiscovery {
     String text, {
     List<AndroidDevice> devices,
     List<String> diagnostics,
-    AndroidSdk androidSdk,
-    FileSystem fileSystem,
-    Logger logger,
-    Platform platform,
-    ProcessManager processManager,
-    @required TimeoutConfiguration timeoutConfiguration,
   }) {
     // Check for error messages from adb
     if (!text.contains('List of devices')) {
@@ -170,19 +154,13 @@ class AndroidDevices extends PollingDeviceDiscovery {
             productID: info['product'],
             modelID: info['model'] ?? deviceID,
             deviceCodeName: info['device'],
-            androidSdk: androidSdk ?? globals.androidSdk,
-            fileSystem: fileSystem ?? globals.fs,
-            logger: logger ?? globals.logger,
-            platform: platform ?? globals.platform,
-            processManager: processManager ?? globals.processManager,
-            timeoutConfiguration: timeoutConfiguration,
           ));
         }
       } else {
         diagnostics?.add(
           'Unexpected failure parsing device information from adb output:\n'
           '$line\n'
-          '${globals.userMessages.flutterToolBugInstructions}');
+          'Please report a bug at https://github.com/flutter/flutter/issues/new/choose');
       }
     }
   }

@@ -1,5 +1,4 @@
 {
-  "tabSemanticsLabel": "Pestaña $tabIndex de $tabCount",
   "datePickerHourSemanticsLabelOne": "$hour en punto",
   "datePickerHourSemanticsLabelOther": "$hour en punto",
   "datePickerMinuteSemanticsLabelOne": "1 minuto",
@@ -19,6 +18,5 @@
   "cutButtonLabel": "Cortar",
   "copyButtonLabel": "Copiar",
   "pasteButtonLabel": "Pegar",
-  "selectAllButtonLabel": "Seleccionar todos",
-  "modalBarrierDismissLabel": "Descartar"
+  "selectAllButtonLabel": "Seleccionar todos"
 }

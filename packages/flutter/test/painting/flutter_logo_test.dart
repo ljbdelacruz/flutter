@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/painting.dart';
 
@@ -56,7 +54,7 @@ void main() {
     expect(logo.margin, EdgeInsets.lerp(start.margin, end.margin, 0.5));
   });
 
-  test('FlutterLogoDecoration.lerpFrom and FlutterLogoDecoration.lerpTo', () {
+  test('FlutterLogoDecorationl.lerpFrom and FlutterLogoDecorationl.lerpTo', () {
     expect(Decoration.lerp(start, const BoxDecoration(), 0.0), start);
     expect(Decoration.lerp(start, const BoxDecoration(), 1.0), const BoxDecoration());
     expect(Decoration.lerp(const BoxDecoration(), end, 0.0), const BoxDecoration());

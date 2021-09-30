@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -107,7 +105,7 @@ void main() {
     expect(log, <String>['badListener', 'listener1', 'listener2']);
     expect(tester.takeException(), isNullThrownError);
     log.clear();
-  });
+  }, skip: isBrowser);
 
   test('ChangeNotifier with mutating listener', () {
     final TestNotifier test = TestNotifier();

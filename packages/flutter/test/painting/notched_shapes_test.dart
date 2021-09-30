@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -83,7 +81,7 @@ void main() {
           sampleSize: 100,
         ),
       );
-    }, skip: isBrowser); // https://github.com/flutter/flutter/issues/44572
+    }, skip: isBrowser);
 
     test('AutomaticNotchedShape - no guest', () {
       expect(

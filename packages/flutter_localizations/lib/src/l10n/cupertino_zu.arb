@@ -18,7 +18,5 @@
   "cutButtonLabel": "Sika",
   "copyButtonLabel": "Kopisha",
   "pasteButtonLabel": "Namathisela",
-  "selectAllButtonLabel": "Khetha konke",
-  "tabSemanticsLabel": "Ithebhu $tabIndex kwangu-$tabCount",
-  "modalBarrierDismissLabel": "Cashisa"
+  "selectAllButtonLabel": "Khetha konke"
 }

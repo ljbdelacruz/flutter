@@ -18,7 +18,5 @@
   "cutButtonLabel": "កាត់",
   "copyButtonLabel": "ចម្លង",
   "pasteButtonLabel": "ដាក់​ចូល",
-  "selectAllButtonLabel": "ជ្រើសរើស​ទាំងអស់",
-  "tabSemanticsLabel": "ផ្ទាំងទី $tabIndex នៃ $tabCount",
-  "modalBarrierDismissLabel": "ច្រាន​ចោល"
+  "selectAllButtonLabel": "ជ្រើសរើស​ទាំងអស់"
 }

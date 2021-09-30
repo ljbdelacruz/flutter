@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -4062,7 +4060,7 @@ abstract class SemanticsSortKey with Diagnosticable implements Comparable<Semant
 ///
 /// [OrdinalSortKey]s are sorted by the optional [name], then by their [order].
 /// If [SemanticsProperties.sortKey] is a [OrdinalSortKey], then all the other
-/// specified sort keys in the same semantics group must also be
+/// speficied sort keys in the same semantics group must also be
 /// [OrdinalSortKey]s.
 ///
 /// Keys with no [name] are compared to other keys with no [name], and will

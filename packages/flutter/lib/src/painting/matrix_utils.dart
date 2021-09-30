@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -13,7 +11,7 @@ import 'basic_types.dart';
 
 /// Utility functions for working with matrices.
 class MatrixUtils {
-  // This class is not meant to be instantiated or extended; this constructor
+  // This class is not meant to be instatiated or extended; this constructor
   // prevents instantiation and extension.
   // ignore: unused_element
   MatrixUtils._();

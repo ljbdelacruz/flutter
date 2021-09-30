@@ -6,19 +6,17 @@ import 'package:meta/meta.dart';
 
 import '../base/common.dart';
 import '../base/file_system.dart';
-import '../build_info.dart';
 import '../build_system/build_system.dart';
 import '../build_system/depfile.dart';
 import '../build_system/targets/android.dart';
 import '../build_system/targets/assets.dart';
-import '../build_system/targets/common.dart';
+import '../build_system/targets/dart.dart';
 import '../build_system/targets/ios.dart';
 import '../build_system/targets/linux.dart';
 import '../build_system/targets/macos.dart';
 import '../build_system/targets/web.dart';
 import '../build_system/targets/windows.dart';
 import '../cache.dart';
-import '../convert.dart';
 import '../globals.dart' as globals;
 import '../project.dart';
 import '../reporting/reporting.dart';
@@ -26,31 +24,25 @@ import '../runner/flutter_command.dart';
 
 /// All currently implemented targets.
 const List<Target> _kDefaultTargets = <Target>[
-  // Shared targets
+  UnpackWindows(),
   CopyAssets(),
   KernelSnapshot(),
-  AotElfProfile(TargetPlatform.android_arm),
-  AotElfRelease(TargetPlatform.android_arm),
+  AotElfProfile(),
+  AotElfRelease(),
   AotAssemblyProfile(),
   AotAssemblyRelease(),
-  // macOS targets
   DebugMacOSFramework(),
   DebugMacOSBundleFlutterAssets(),
   ProfileMacOSBundleFlutterAssets(),
   ReleaseMacOSBundleFlutterAssets(),
-  // Linux targets
   DebugBundleLinuxAssets(),
-  ProfileBundleLinuxAssets(),
-  ReleaseBundleLinuxAssets(),
-  // Web targets
   WebServiceWorker(),
-  ReleaseAndroidApplication(),
-  // This is a one-off rule for bundle and aot compat.
-  CopyFlutterBundle(),
-  // Android targets,
   DebugAndroidApplication(),
   FastStartAndroidApplication(),
   ProfileAndroidApplication(),
+  ReleaseAndroidApplication(),
+  // This is a one-off rule for bundle and aot compat.
+  CopyFlutterBundle(),
   // Android ABI specific AOT rules.
   androidArmProfileBundle,
   androidArm64ProfileBundle,
@@ -58,15 +50,9 @@ const List<Target> _kDefaultTargets = <Target>[
   androidArmReleaseBundle,
   androidArm64ReleaseBundle,
   androidx64ReleaseBundle,
-  // iOS targets
   DebugIosApplicationBundle(),
   ProfileIosApplicationBundle(),
   ReleaseIosApplicationBundle(),
-  // Windows targets
-  UnpackWindows(),
-  DebugBundleWindowsAssets(),
-  ProfileBundleWindowsAssets(),
-  ReleaseBundleWindowsAssets(),
 ];
 
 /// Assemble provides a low level API to interact with the flutter tool build
@@ -77,17 +63,6 @@ class AssembleCommand extends FlutterCommand {
       'define',
       abbr: 'd',
       help: 'Allows passing configuration to a target with --define=target=key=value.',
-    );
-    argParser.addOption(
-      'performance-measurement-file',
-      help: 'Output individual target performance to a JSON file.'
-    );
-    argParser.addMultiOption(
-      'input',
-      abbr: 'i',
-      help: 'Allows passing additional inputs with --input=key=value. Unlike '
-      'defines, additional inputs do not generate a new configuration, instead '
-      'they are treated as dependencies of the targets that use them.'
     );
     argParser.addOption('depfile', help: 'A file path where a depfile will be written. '
       'This contains all build inputs and outputs in a make style syntax'
@@ -105,7 +80,6 @@ class AssembleCommand extends FlutterCommand {
         'root of the current Flutter project.',
     );
     argParser.addOption(kExtraGenSnapshotOptions);
-    argParser.addOption(kExtraFrontEndOptions);
     argParser.addOption(kDartDefines);
     argParser.addOption(
       'resource-pool-size',
@@ -126,7 +100,7 @@ class AssembleCommand extends FlutterCommand {
       return const <CustomDimensions, String>{};
     }
     try {
-      final Environment localEnvironment = createEnvironment();
+      final Environment localEnvironment = environment;
       return <CustomDimensions, String>{
         CustomDimensions.commandBuildBundleTargetPlatform: localEnvironment.defines['TargetPlatform'],
         CustomDimensions.commandBuildBundleIsModule: '${futterProject.isModule}',
@@ -138,7 +112,7 @@ class AssembleCommand extends FlutterCommand {
   }
 
   /// The target(s) we are building.
-  List<Target> createTargets() {
+  List<Target> get targets {
     if (argResults.rest.isEmpty) {
       throwToolExit('missing target name for flutter assemble.');
     }
@@ -159,7 +133,7 @@ class AssembleCommand extends FlutterCommand {
   }
 
   /// The environmental configuration for a build invocation.
-  Environment createEnvironment() {
+  Environment get environment {
     final FlutterProject flutterProject = FlutterProject.current();
     String output = stringArg('output');
     if (output == null) {
@@ -176,16 +150,12 @@ class AssembleCommand extends FlutterCommand {
           .childDirectory('flutter_build'),
       projectDir: flutterProject.directory,
       defines: _parseDefines(stringsArg('define')),
-      inputs: _parseDefines(stringsArg('input')),
       cacheDir: globals.cache.getRoot(),
       flutterRootDir: globals.fs.directory(Cache.flutterRoot),
       artifacts: globals.artifacts,
       fileSystem: globals.fs,
       logger: globals.logger,
       processManager: globals.processManager,
-      engineVersion: globals.artifacts.isLocalEngine
-        ? null
-        : globals.flutterVersion.engineRevision
     );
     return result;
   }
@@ -205,37 +175,31 @@ class AssembleCommand extends FlutterCommand {
     if (argResults.wasParsed(kExtraGenSnapshotOptions)) {
       results[kExtraGenSnapshotOptions] = argResults[kExtraGenSnapshotOptions] as String;
     }
+    // Workaround for dart-define formatting
     if (argResults.wasParsed(kDartDefines)) {
       results[kDartDefines] = argResults[kDartDefines] as String;
-    }
-    if (argResults.wasParsed(kExtraFrontEndOptions)) {
-      results[kExtraFrontEndOptions] = argResults[kExtraFrontEndOptions] as String;
     }
     return results;
   }
 
   @override
   Future<FlutterCommandResult> runCommand() async {
-    final List<Target> targets = createTargets();
+    final List<Target> targets = this.targets;
     final Target target = targets.length == 1 ? targets.single : _CompositeTarget(targets);
-    final BuildResult result = await globals.buildSystem.build(
-      target,
-      createEnvironment(),
-      buildSystemConfig: BuildSystemConfig(
-        resourcePoolSize: argResults.wasParsed('resource-pool-size')
-          ? int.tryParse(stringArg('resource-pool-size'))
-          : null,
-        ),
-      );
+    final BuildResult result = await globals.buildSystem.build(target, environment, buildSystemConfig: BuildSystemConfig(
+      resourcePoolSize: argResults.wasParsed('resource-pool-size')
+        ? int.tryParse(stringArg('resource-pool-size'))
+        : null,
+    ));
     if (!result.success) {
       for (final ExceptionMeasurement measurement in result.exceptions.values) {
-        if (measurement.fatal || globals.logger.isVerbose) {
-          globals.printError('Target ${measurement.target} failed: ${measurement.exception}',
-            stackTrace: measurement.stackTrace
-          );
-        }
+        globals.printError('Target ${measurement.target} failed: ${measurement.exception}',
+          stackTrace: measurement.fatal
+            ? measurement.stackTrace
+            : null,
+        );
       }
-      throwToolExit('');
+      throwToolExit('build failed.');
     }
     globals.printTrace('build succeeded.');
     if (argResults.wasParsed('build-inputs')) {
@@ -244,16 +208,13 @@ class AssembleCommand extends FlutterCommand {
     if (argResults.wasParsed('build-outputs')) {
       writeListIfChanged(result.outputFiles, stringArg('build-outputs'));
     }
-    if (argResults.wasParsed('performance-measurement-file')) {
-      final File outFile = globals.fs.file(argResults['performance-measurement-file']);
-      writePerformanceData(result.performance.values, outFile);
-    }
     if (argResults.wasParsed('depfile')) {
       final File depfileFile = globals.fs.file(stringArg('depfile'));
       final Depfile depfile = Depfile(result.inputFiles, result.outputFiles);
       final DepfileService depfileService = DepfileService(
         fileSystem: globals.fs,
         logger: globals.logger,
+        platform: globals.platform,
       );
       depfileService.writeToFile(depfile, globals.fs.file(depfileFile));
     }
@@ -277,26 +238,6 @@ void writeListIfChanged(List<File> files, String path) {
   if (currentContents != newContents) {
     file.writeAsStringSync(newContents);
   }
-}
-
-/// Output performance measurement data in [outFile].
-@visibleForTesting
-void writePerformanceData(Iterable<PerformanceMeasurement> measurements, File outFile) {
-  final Map<String, Object> jsonData = <String, Object>{
-    'targets': <Object>[
-      for (final PerformanceMeasurement measurement in measurements)
-        <String, Object>{
-          'name': measurement.analyicsName,
-          'skipped': measurement.skipped,
-          'succeeded': measurement.succeeded,
-          'elapsedMilliseconds': measurement.elapsedMilliseconds,
-        }
-    ]
-  };
-  if (!outFile.parent.existsSync()) {
-    outFile.parent.createSync(recursive: true);
-  }
-  outFile.writeAsStringSync(json.encode(jsonData));
 }
 
 class _CompositeTarget extends Target {

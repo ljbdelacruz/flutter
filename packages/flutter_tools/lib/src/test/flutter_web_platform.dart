@@ -10,7 +10,12 @@ import 'dart:typed_data';
 import 'package:async/async.dart';
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
-import 'package:package_config/package_config.dart';
+// TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+// ignore: deprecated_member_use
+import 'package:package_config/discovery.dart';
+// TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+// ignore: deprecated_member_use
+import 'package:package_config/packages.dart';
 import 'package:path/path.dart' as p; // ignore: package_path_import
 import 'package:pool/pool.dart';
 import 'package:shelf/shelf.dart' as shelf;
@@ -41,6 +46,7 @@ import '../dart/package_map.dart';
 import '../globals.dart' as globals;
 import '../project.dart';
 import '../web/chrome.dart';
+
 import 'test_compiler.dart';
 import 'test_config.dart';
 
@@ -74,7 +80,7 @@ class FlutterWebPlatform extends PlatformPlugin {
 
     _testGoldenComparator = TestGoldenComparator(
       shellPath,
-      () => TestCompiler(BuildMode.debug, false, flutterProject, <String>[]),
+      () => TestCompiler(BuildMode.debug, false, flutterProject),
     );
   }
 
@@ -96,23 +102,19 @@ class FlutterWebPlatform extends PlatformPlugin {
     );
   }
 
-  final Future<PackageConfig> _packagesFuture = loadPackageConfigWithLogging(
-    globals.fs.file(globalPackagesPath),
-    logger: globals.logger,
-  );
+  // TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+  // ignore: deprecated_member_use
+  final Future<Packages> _packagesFuture = loadPackagesFile(Uri.base.resolve('.packages'));
 
-  final Future<PackageConfig> _flutterToolsPackageMap = loadPackageConfigWithLogging(
-    globals.fs.file(globals.fs.path.join(
-      Cache.flutterRoot,
-      'packages',
-      'flutter_tools',
-      '.packages',
-    )),
-    logger: globals.logger,
-  );
+  final PackageMap _flutterToolsPackageMap = PackageMap(p.join(
+    Cache.flutterRoot,
+    'packages',
+    'flutter_tools',
+    '.packages',
+  ), fileSystem: globals.fs);
 
   /// Uri of the test package.
-  Future<Uri> get testUri async => (await _flutterToolsPackageMap)['test']?.packageUriRoot;
+  Uri get testUri => _flutterToolsPackageMap.map['test'];
 
   /// The test runner configuration.
   final Configuration _config;
@@ -166,19 +168,19 @@ class FlutterWebPlatform extends PlatformPlugin {
       ));
 
   /// The precompiled test javascript.
-  Future<File> get testDartJs async => globals.fs.file(globals.fs.path.join(
-    (await testUri).toFilePath(),
-    'dart.js',
-  ));
+  File get testDartJs => globals.fs.file(globals.fs.path.join(
+        testUri.toFilePath(),
+        'dart.js',
+      ));
 
-  Future<File> get testHostDartJs async => globals.fs.file(globals.fs.path.join(
-    (await testUri).toFilePath(),
-    'src',
-    'runner',
-    'browser',
-    'static',
-    'host.dart.js',
-  ));
+  File get testHostDartJs => globals.fs.file(globals.fs.path.join(
+        testUri.toFilePath(),
+        'src',
+        'runner',
+        'browser',
+        'static',
+        'host.dart.js',
+      ));
 
   Future<shelf.Response> _handleStaticArtifact(shelf.Request request) async {
     if (request.requestedUri.path.contains('require.js')) {
@@ -201,12 +203,12 @@ class FlutterWebPlatform extends PlatformPlugin {
       );
     } else if (request.requestedUri.path.contains('static/dart.js')) {
       return shelf.Response.ok(
-        (await testDartJs).openRead(),
+        testDartJs.openRead(),
         headers: <String, String>{'Content-Type': 'text/javascript'},
       );
     } else if (request.requestedUri.path.contains('host.dart.js')) {
       return shelf.Response.ok(
-        (await testHostDartJs).openRead(),
+        testHostDartJs.openRead(),
         headers: <String, String>{'Content-Type': 'text/javascript'},
       );
     } else {
@@ -216,27 +218,27 @@ class FlutterWebPlatform extends PlatformPlugin {
 
   FutureOr<shelf.Response> _packageFilesHandler(shelf.Request request) async {
     if (request.requestedUri.pathSegments.first == 'packages') {
-      final PackageConfig packageConfig = await _packagesFuture;
-      final Uri fileUri = packageConfig.resolve(Uri(
+      // TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+      // ignore: deprecated_member_use
+      final Packages packages = await _packagesFuture;
+      final Uri fileUri = packages.resolve(Uri(
         scheme: 'package',
         pathSegments: request.requestedUri.pathSegments.skip(1),
       ));
-      if (fileUri != null) {
-        final String dirname = p.dirname(fileUri.toFilePath());
-        final String basename = p.basename(fileUri.toFilePath());
-        final shelf.Handler handler = createStaticHandler(dirname);
-        final shelf.Request modifiedRequest = shelf.Request(
-          request.method,
-          request.requestedUri.replace(path: basename),
-          protocolVersion: request.protocolVersion,
-          headers: request.headers,
-          handlerPath: request.handlerPath,
-          url: request.url.replace(path: basename),
-          encoding: request.encoding,
-          context: request.context,
-        );
-        return handler(modifiedRequest);
-      }
+      final String dirname = p.dirname(fileUri.toFilePath());
+      final String basename = p.basename(fileUri.toFilePath());
+      final shelf.Handler handler = createStaticHandler(dirname);
+      final shelf.Request modifiedRequest = shelf.Request(
+        request.method,
+        request.requestedUri.replace(path: basename),
+        protocolVersion: request.protocolVersion,
+        headers: request.headers,
+        handlerPath: request.handlerPath,
+        url: request.url.replace(path: basename),
+        encoding: request.encoding,
+        context: request.context,
+      );
+      return handler(modifiedRequest);
     }
     return shelf.Response.notFound('Not Found');
   }
@@ -336,7 +338,7 @@ class FlutterWebPlatform extends PlatformPlugin {
     Object message,
   ) async {
     if (_closed) {
-      throw StateError('Load called on a closed FlutterWebPlatform');
+      return null;
     }
     final PoolResource lockResource = await _suiteLock.request();
 
@@ -349,7 +351,7 @@ class FlutterWebPlatform extends PlatformPlugin {
     }
 
     if (_closed) {
-      throw StateError('Load called on a closed FlutterWebPlatform');
+      return null;
     }
 
     final Uri suiteUrl = url.resolveUri(globals.fs.path.toUri(globals.fs.path.withoutExtension(
@@ -361,7 +363,7 @@ class FlutterWebPlatform extends PlatformPlugin {
       lockResource.release();
     });
     if (_closed) {
-      throw StateError('Load called on a closed FlutterWebPlatform');
+      return null;
     }
     return suite;
   }
@@ -556,7 +558,7 @@ class BrowserManager {
   }
 
   /// The browser instance that this is connected to via [_channel].
-  final Chromium _browser;
+  final Chrome _browser;
 
   // TODO(nweiz): Consider removing the duplication between this and
   // [_browser.name].
@@ -624,16 +626,8 @@ class BrowserManager {
     bool debug = false,
     bool headless = true,
   }) async {
-    final ChromiumLauncher chromiumLauncher = ChromiumLauncher(
-      browserFinder: findChromeExecutable,
-      fileSystem: globals.fs,
-      operatingSystemUtils: globals.os,
-      logger: globals.logger,
-      platform: globals.platform,
-      processManager: globals.processManager,
-    );
-    final Chromium chrome =
-      await chromiumLauncher.launch(url.toString(), headless: headless);
+    final Chrome chrome =
+        await globals.chromeLauncher.launch(url.toString(), headless: headless);
 
     final Completer<BrowserManager> completer = Completer<BrowserManager>();
 
@@ -866,12 +860,12 @@ class TestGoldenComparator {
 
     // Lazily create the compiler
     _compiler = _compiler ?? compilerFactory();
-    final String output = await _compiler.compile(listenerFile.uri);
+    final String output = await _compiler.compile(listenerFile.path);
     final List<String> command = <String>[
       shellPath,
       '--disable-observatory',
       '--non-interactive',
-      '--packages=$globalPackagesPath',
+      '--packages=${PackageMap.globalPackagesPath}',
       output,
     ];
 

@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:platform/platform.dart';
 
 import 'android/gradle_utils.dart';
 import 'base/common.dart';
@@ -13,7 +14,6 @@ import 'base/io.dart' show SocketException;
 import 'base/logger.dart';
 import 'base/net.dart';
 import 'base/os.dart' show OperatingSystemUtils;
-import 'base/platform.dart';
 import 'base/process.dart';
 import 'features.dart';
 import 'globals.dart' as globals;
@@ -37,7 +37,6 @@ class DevelopmentArtifact {
   /// Artifacts required for Android development.
   static const DevelopmentArtifact androidGenSnapshot = DevelopmentArtifact._('android_gen_snapshot');
   static const DevelopmentArtifact androidMaven = DevelopmentArtifact._('android_maven');
-
   // Artifacts used for internal builds.
   static const DevelopmentArtifact androidInternalBuild = DevelopmentArtifact._('android_internal_build');
 
@@ -112,16 +111,16 @@ class Cache {
       _artifacts.add(MaterialFonts(this));
 
       _artifacts.add(GradleWrapper(this));
-      _artifacts.add(AndroidMavenArtifacts(this));
+      _artifacts.add(AndroidMavenArtifacts());
       _artifacts.add(AndroidGenSnapshotArtifacts(this));
       _artifacts.add(AndroidInternalBuildArtifacts(this));
 
       _artifacts.add(IOSEngineArtifacts(this));
       _artifacts.add(FlutterWebSdk(this));
       _artifacts.add(FlutterSdk(this));
-      _artifacts.add(WindowsEngineArtifacts(this, platform: _platform));
+      _artifacts.add(WindowsEngineArtifacts(this));
       _artifacts.add(MacOSEngineArtifacts(this));
-      _artifacts.add(LinuxEngineArtifacts(this, platform: _platform));
+      _artifacts.add(LinuxEngineArtifacts(this));
       _artifacts.add(LinuxFuchsiaSDKArtifacts(this));
       _artifacts.add(MacOSFuchsiaSDKArtifacts(this));
       _artifacts.add(FlutterRunnerSDKArtifacts(this));
@@ -167,7 +166,7 @@ class Cache {
   static RandomAccessFile _lock;
   static bool _lockEnabled = true;
 
-  /// Turn off the [lock]/[releaseLock] mechanism.
+  /// Turn off the [lock]/[releaseLockEarly] mechanism.
   ///
   /// This is used by the tests since they run simultaneously and all in one
   /// process and so it would be a mess if they had to use the lock.
@@ -176,7 +175,7 @@ class Cache {
     _lockEnabled = false;
   }
 
-  /// Turn on the [lock]/[releaseLock] mechanism.
+  /// Turn on the [lock]/[releaseLockEarly] mechanism.
   ///
   /// This is used by the tests.
   @visibleForTesting
@@ -184,20 +183,13 @@ class Cache {
     _lockEnabled = true;
   }
 
-  /// Check if lock acquired, skipping FLUTTER_ALREADY_LOCKED reentrant checks.
-  ///
-  /// This is used by the tests.
-  @visibleForTesting
-  static bool isLocked() {
-    return _lock != null;
-  }
-
   /// Lock the cache directory.
   ///
-  /// This happens while required artifacts are updated
-  /// (see [FlutterCommandRunner.runCommand]).
+  /// This happens automatically on startup (see [FlutterCommandRunner.runCommand]).
   ///
-  /// This uses normal POSIX flock semantics.
+  /// Normally the lock will be held until the process exits (this uses normal
+  /// POSIX flock semantics). Long-lived commands should release the lock by
+  /// calling [Cache.releaseLockEarly] once they are no longer touching the cache.
   static Future<void> lock() async {
     if (!_lockEnabled) {
       return;
@@ -230,11 +222,8 @@ class Cache {
     }
   }
 
-  /// Releases the lock.
-  ///
-  /// This happens automatically on startup (see [FlutterCommand.verifyThenRunCommand])
-  /// after the command's required artifacts are updated.
-  static void releaseLock() {
+  /// Releases the lock. This is not necessary unless the process is long-lived.
+  static void releaseLockEarly() {
     if (!_lockEnabled || _lock == null) {
       return;
     }
@@ -244,8 +233,8 @@ class Cache {
 
   /// Checks if the current process owns the lock for the cache directory at
   /// this very moment; throws a [StateError] if it doesn't.
-  static void checkLockAcquired([Platform platform]) {
-    if (_lockEnabled && _lock == null && (platform ?? globals.platform).environment['FLUTTER_ALREADY_LOCKED'] != 'true') {
+  static void checkLockAcquired() {
+    if (_lockEnabled && _lock == null && globals.platform.environment['FLUTTER_ALREADY_LOCKED'] != 'true') {
       throw StateError(
         'The current process does not own the lock for the cache directory. This is a bug in Flutter CLI tools.',
       );
@@ -371,21 +360,6 @@ class Cache {
       '$artifactName.version',
     ));
     return versionFile.existsSync() ? versionFile.readAsStringSync().trim() : null;
-  }
-
-    /// Delete all stamp files maintained by the cache.
-  void clearStampFiles() {
-    try {
-      getStampFileFor('flutter_tools').deleteSync();
-      for (final ArtifactSet artifact in _artifacts) {
-        final File file = getStampFileFor(artifact.stampName);
-        if (file.existsSync()) {
-          file.deleteSync();
-        }
-      }
-    } on FileSystemException catch (err) {
-      _logger.printError('Failed to delete some stamp files: $err');
-    }
   }
 
   String getStampFor(String artifactName) {
@@ -524,13 +498,6 @@ abstract class ArtifactSet {
 
   /// Updates the artifact.
   Future<void> update();
-
-  /// The canonical name of the artifact.
-  String get name;
-
-  // The name of the stamp file. Defaults to the same as the
-  // artifact name.
-  String get stampName => name;
 }
 
 /// An artifact set managed by the cache.
@@ -543,10 +510,11 @@ abstract class CachedArtifact extends ArtifactSet {
 
   final Cache cache;
 
-  @override
+  /// The canonical name of the artifact.
   final String name;
 
-  @override
+  // The name of the stamp file. Defaults to the same as the
+  // artifact name.
   String get stampName => name;
 
   Directory get location => cache.getArtifactDirectory(name);
@@ -911,25 +879,19 @@ class MacOSEngineArtifacts extends EngineCachedArtifact {
   List<String> getLicenseDirs() => const <String>[];
 }
 
-/// Artifacts required for desktop Windows builds.
 class WindowsEngineArtifacts extends EngineCachedArtifact {
-  WindowsEngineArtifacts(Cache cache, {
-    @required Platform platform,
-  }) : _platform = platform,
-       super(
-        'windows-sdk',
-         cache,
-         DevelopmentArtifact.windows,
-       );
-
-  final Platform _platform;
+  WindowsEngineArtifacts(Cache cache) : super(
+    'windows-sdk',
+    cache,
+    DevelopmentArtifact.windows,
+  );
 
   @override
   List<String> getPackageDirs() => const <String>[];
 
   @override
   List<List<String>> getBinaryDirs() {
-    if (_platform.isWindows || ignorePlatformFiltering) {
+    if (globals.platform.isWindows || ignorePlatformFiltering) {
       return _windowsDesktopBinaryDirs;
     }
     return const <List<String>>[];
@@ -939,25 +901,19 @@ class WindowsEngineArtifacts extends EngineCachedArtifact {
   List<String> getLicenseDirs() => const <String>[];
 }
 
-/// Artifacts required for desktop Linux builds.
 class LinuxEngineArtifacts extends EngineCachedArtifact {
-  LinuxEngineArtifacts(Cache cache, {
-    @required Platform platform
-  }) : _platform = platform,
-       super(
-        'linux-sdk',
-        cache,
-        DevelopmentArtifact.linux,
-      );
-
-  final Platform _platform;
+  LinuxEngineArtifacts(Cache cache) : super(
+    'linux-sdk',
+    cache,
+    DevelopmentArtifact.linux,
+  );
 
   @override
   List<String> getPackageDirs() => const <String>[];
 
   @override
   List<List<String>> getBinaryDirs() {
-    if (_platform.isLinux || ignorePlatformFiltering) {
+    if (globals.platform.isLinux || ignorePlatformFiltering) {
       return _linuxDesktopBinaryDirs;
     }
     return const <List<String>>[];
@@ -1022,15 +978,12 @@ class AndroidInternalBuildArtifacts extends EngineCachedArtifact {
 
 /// A cached artifact containing the Maven dependencies used to build Android projects.
 class AndroidMavenArtifacts extends ArtifactSet {
-  AndroidMavenArtifacts(this.cache) : super(DevelopmentArtifact.androidMaven);
-
-  final Cache cache;
+  AndroidMavenArtifacts() : super(DevelopmentArtifact.androidMaven);
 
   @override
   Future<void> update() async {
-    final Directory tempDir = cache.getRoot().createTempSync(
-      'flutter_gradle_wrapper.',
-    );
+    final Directory tempDir =
+        globals.fs.systemTempDirectory.createTempSync('flutter_gradle_wrapper.');
     gradleUtils.injectGradleWrapperIfNeeded(tempDir);
 
     final Status status = globals.logger.startProgress('Downloading Android Maven dependencies...',
@@ -1065,9 +1018,6 @@ class AndroidMavenArtifacts extends ArtifactSet {
     // Therefore, call Gradle to figure this out.
     return false;
   }
-
-  @override
-  String get name => 'android-maven-artifacts';
 }
 
 class IOSEngineArtifacts extends EngineCachedArtifact {
@@ -1414,22 +1364,19 @@ void _ensureExists(Directory directory) {
   }
 }
 
-// TODO(jonahwilliams): upload debug desktop artifacts to host-debug and
-// remove from existing host folder.
-// https://github.com/flutter/flutter/issues/38935
 const List<List<String>> _windowsDesktopBinaryDirs = <List<String>>[
   <String>['windows-x64', 'windows-x64/windows-x64-flutter.zip'],
   <String>['windows-x64', 'windows-x64/flutter-cpp-client-wrapper.zip'],
-  <String>['windows-x64-profile', 'windows-x64-profile/windows-x64-flutter.zip'],
-  <String>['windows-x64-release', 'windows-x64-release/windows-x64-flutter.zip'],
 ];
 
 const List<List<String>> _linuxDesktopBinaryDirs = <List<String>>[
-  <String>['linux-x64', 'linux-x64/linux-x64-flutter-gtk.zip'],
-  <String>['linux-x64-profile', 'linux-x64-profile/linux-x64-flutter-gtk.zip'],
-  <String>['linux-x64-release', 'linux-x64-release/linux-x64-flutter-gtk.zip'],
+  <String>['linux-x64', 'linux-x64/linux-x64-flutter-glfw.zip'],
+  <String>['linux-x64', 'linux-x64/flutter-cpp-client-wrapper-glfw.zip'],
 ];
 
+// TODO(jonahwilliams): upload debug desktop artifacts to host-debug and
+// remove from existing host folder.
+// https://github.com/flutter/flutter/issues/38935
 const List<List<String>> _macOSDesktopBinaryDirs = <List<String>>[
   <String>['darwin-x64', 'darwin-x64/FlutterMacOS.framework.zip'],
   <String>['darwin-x64-profile', 'darwin-x64-profile/FlutterMacOS.framework.zip'],

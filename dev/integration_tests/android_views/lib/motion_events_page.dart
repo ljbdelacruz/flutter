@@ -79,46 +79,31 @@ class MotionEventsBodyState extends State<MotionEventsBody> {
         ),
         Row(
           children: <Widget>[
-            Expanded(
-              child: RaisedButton(
-                child: const Text('RECORD'),
-                onPressed: listenToFlutterViewEvents,
-              ),
+            RaisedButton(
+              child: const Text('RECORD'),
+              onPressed: listenToFlutterViewEvents,
             ),
-            Expanded(
-              child: RaisedButton(
-                child: const Text('CLEAR'),
-                onPressed: () {
-                  setState(() {
-                    flutterViewEvents.clear();
-                    embeddedViewEvents.clear();
-                  });
-                },
-              ),
+            RaisedButton(
+              child: const Text('CLEAR'),
+              onPressed: () {
+                setState(() {
+                  flutterViewEvents.clear();
+                  embeddedViewEvents.clear();
+                });
+              },
             ),
-            Expanded(
-              child: RaisedButton(
-                child: const Text('SAVE'),
-                onPressed: () {
-                  const StandardMessageCodec codec = StandardMessageCodec();
-                  saveRecordedEvents(
+            RaisedButton(
+              child: const Text('SAVE'),
+              onPressed: () {
+                const StandardMessageCodec codec = StandardMessageCodec();
+                saveRecordedEvents(
                     codec.encodeMessage(flutterViewEvents), context);
-                },
-              ),
+              },
             ),
-            Expanded(
-              child: RaisedButton(
-                key: const ValueKey<String>('play'),
-                child: const Text('PLAY FILE'),
-                onPressed: () { playEventsFile(); },
-              ),
-            ),
-            Expanded(
-              child: RaisedButton(
-                key: const ValueKey<String>('back'),
-                child: const Text('BACK'),
-                onPressed: () { Navigator.pop(context); },
-              ),
+            RaisedButton(
+              key: const ValueKey<String>('play'),
+              child: const Text('PLAY FILE'),
+              onPressed: () { playEventsFile(); },
             ),
           ],
         ),

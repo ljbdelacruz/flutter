@@ -5,15 +5,16 @@
 import 'dart:io';
 
 import 'package:file/memory.dart';
-import 'package:flutter_tools/src/base/file_system.dart';
-import 'package:flutter_tools/src/base/platform.dart';
+import 'package:flutter_tools/src/aot.dart';
 import 'package:flutter_tools/src/build_info.dart';
-import 'package:flutter_tools/src/build_system/build_system.dart';
+import 'package:flutter_tools/src/bundle.dart';
 import 'package:flutter_tools/src/cache.dart';
 import 'package:flutter_tools/src/commands/build_ios_framework.dart';
-import 'package:flutter_tools/src/globals.dart' as globals;
+import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/version.dart';
+import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:mockito/mockito.dart';
+import 'package:platform/platform.dart';
 
 import '../../src/common.dart';
 import '../../src/context.dart';
@@ -63,11 +64,11 @@ void main() {
         when(mockFlutterVersion.frameworkVersion).thenReturn(frameworkVersion);
 
         final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-          buildSystem: MockBuildSystem(),
+          aotBuilder: MockAotBuilder(),
+          bundleBuilder: MockBundleBuilder(),
           platform: fakePlatform,
           flutterVersion: mockFlutterVersion,
-          cache: mockCache,
-          verboseHelp: false,
+          cache: mockCache
         );
 
         expect(() => command.produceFlutterPodspec(BuildMode.debug, outputDirectory),
@@ -88,11 +89,11 @@ void main() {
         when(mockGitTagVersion.commits).thenReturn(2);
 
         final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-          buildSystem: MockBuildSystem(),
+          aotBuilder: MockAotBuilder(),
+          bundleBuilder: MockBundleBuilder(),
           platform: fakePlatform,
           flutterVersion: mockFlutterVersion,
-          cache: mockCache,
-          verboseHelp: false,
+          cache: mockCache
         );
 
         expect(() => command.produceFlutterPodspec(BuildMode.debug, outputDirectory),
@@ -110,11 +111,11 @@ void main() {
         when(mockGitTagVersion.commits).thenReturn(0);
 
         final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-          buildSystem: MockBuildSystem(),
+          aotBuilder: MockAotBuilder(),
+          bundleBuilder: MockBundleBuilder(),
           platform: fakePlatform,
           flutterVersion: mockFlutterVersion,
-          cache: mockCache,
-          verboseHelp: false,
+          cache: mockCache
         );
 
         expect(() => command.produceFlutterPodspec(BuildMode.debug, outputDirectory),
@@ -148,11 +149,11 @@ void main() {
 
           testUsingContext('created when forced', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-              buildSystem: MockBuildSystem(),
-              platform: fakePlatform,
-              flutterVersion: mockFlutterVersion,
-              cache: mockCache,
-              verboseHelp: false,
+                aotBuilder: MockAotBuilder(),
+                bundleBuilder: MockBundleBuilder(),
+                platform: fakePlatform,
+                flutterVersion: mockFlutterVersion,
+                cache: mockCache
             );
             command.produceFlutterPodspec(BuildMode.debug, outputDirectory, force: true);
 
@@ -171,11 +172,11 @@ void main() {
 
           testUsingContext('contains license and version', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-              buildSystem: MockBuildSystem(),
-              platform: fakePlatform,
-              flutterVersion: mockFlutterVersion,
-              cache: mockCache,
-              verboseHelp: false,
+                aotBuilder: MockAotBuilder(),
+                bundleBuilder: MockBundleBuilder(),
+                platform: fakePlatform,
+                flutterVersion: mockFlutterVersion,
+                cache: mockCache
             );
             command.produceFlutterPodspec(BuildMode.debug, outputDirectory);
 
@@ -191,11 +192,11 @@ void main() {
 
           testUsingContext('debug URL', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-              buildSystem: MockBuildSystem(),
-              platform: fakePlatform,
-              flutterVersion: mockFlutterVersion,
-              cache: mockCache,
-              verboseHelp: false,
+                aotBuilder: MockAotBuilder(),
+                bundleBuilder: MockBundleBuilder(),
+                platform: fakePlatform,
+                flutterVersion: mockFlutterVersion,
+                cache: mockCache
             );
             command.produceFlutterPodspec(BuildMode.debug, outputDirectory);
 
@@ -209,11 +210,11 @@ void main() {
 
           testUsingContext('profile URL', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-              buildSystem: MockBuildSystem(),
-              platform: fakePlatform,
-              flutterVersion: mockFlutterVersion,
-              cache: mockCache,
-              verboseHelp: false,
+                aotBuilder: MockAotBuilder(),
+                bundleBuilder: MockBundleBuilder(),
+                platform: fakePlatform,
+                flutterVersion: mockFlutterVersion,
+                cache: mockCache
             );
             command.produceFlutterPodspec(BuildMode.profile, outputDirectory);
 
@@ -227,11 +228,11 @@ void main() {
 
           testUsingContext('release URL', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-              buildSystem: MockBuildSystem(),
-              platform: fakePlatform,
-              flutterVersion: mockFlutterVersion,
-              cache: mockCache,
-              verboseHelp: false,
+                aotBuilder: MockAotBuilder(),
+                bundleBuilder: MockBundleBuilder(),
+                platform: fakePlatform,
+                flutterVersion: mockFlutterVersion,
+                cache: mockCache
             );
             command.produceFlutterPodspec(BuildMode.release, outputDirectory);
 
@@ -251,4 +252,5 @@ void main() {
 class MockFlutterVersion extends Mock implements FlutterVersion {}
 class MockGitTagVersion extends Mock implements GitTagVersion {}
 class MockCache extends Mock implements Cache {}
-class MockBuildSystem extends Mock implements BuildSystem {}
+class MockAotBuilder extends Mock implements AotBuilder {}
+class MockBundleBuilder extends Mock implements BundleBuilder {}

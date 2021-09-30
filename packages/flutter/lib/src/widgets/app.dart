@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:collection' show HashMap;
 
@@ -202,7 +200,7 @@ class WidgetsApp extends StatefulWidget {
        assert(
          home == null ||
          onGenerateInitialRoutes == null,
-         'If onGenerateInitialRoutes is specified, the home argument will be '
+         'If onGenerateInitialRoutes is specifiied, the home argument will be '
          'redundant.'
        ),
        assert(
@@ -406,11 +404,10 @@ class WidgetsApp extends StatefulWidget {
   /// Defaults to [Window.defaultRouteName], which may be overridden by the code
   /// that launched the application.
   ///
-  /// If the route name starts with a slash and has multiple slashes in it, then
-  /// it is treated as a "deep link", and before this route is pushed, the
-  /// routes leading to this one are pushed also. For example, if the route was
-  /// `/a/b/c`, then the app would start with the three routes `/a`, `/a/b`, and
-  /// `/a/b/c` loaded, in that order.
+  /// If the route contains slashes, then it is treated as a "deep link", and
+  /// before this route is pushed, the routes leading to this one are pushed
+  /// also. For example, if the route was `/a/b/c`, then the app would start
+  /// with the three routes `/a`, `/a/b`, and `/a/b/c` loaded, in that order.
   ///
   /// Intermediate routes aren't required to exist. In the example above, `/a`
   /// and `/a/b` could be skipped if they have no matching route. But `/a/b/c` is
@@ -746,7 +743,7 @@ class WidgetsApp extends StatefulWidget {
   ///   return WidgetsApp(
   ///     shortcuts: <LogicalKeySet, Intent>{
   ///       ... WidgetsApp.defaultShortcuts,
-  ///       LogicalKeySet(LogicalKeyboardKey.select): const ActivateIntent(),
+  ///       LogicalKeySet(LogicalKeyboardKey.select): const Intent(ActivateAction.key),
   ///     },
   ///     color: const Color(0xFFFF0000),
   ///     builder: (BuildContext context, Widget child) {
@@ -793,12 +790,12 @@ class WidgetsApp extends StatefulWidget {
   /// ```dart
   /// Widget build(BuildContext context) {
   ///   return WidgetsApp(
-  ///     actions: <Type, Action<Intent>>{
+  ///     actions: <LocalKey, ActionFactory>{
   ///       ... WidgetsApp.defaultActions,
-  ///       ActivateAction: CallbackAction(
-  ///         onInvoke: (Intent intent) {
+  ///       ActivateAction.key: () => CallbackAction(
+  ///         ActivateAction.key,
+  ///         onInvoke: (FocusNode focusNode, Intent intent) {
   ///           // Do something here...
-  ///           return null;
   ///         },
   ///       ),
   ///     },
@@ -821,7 +818,7 @@ class WidgetsApp extends StatefulWidget {
   ///  * The [Intent] and [Action] classes, which allow definition of new
   ///    actions.
   /// {@endtemplate}
-  final Map<Type, Action<Intent>> actions;
+  final Map<LocalKey, ActionFactory> actions;
 
   /// If true, forces the performance overlay to be visible in all instances.
   ///
@@ -848,17 +845,13 @@ class WidgetsApp extends StatefulWidget {
 
   static final Map<LogicalKeySet, Intent> _defaultShortcuts = <LogicalKeySet, Intent>{
     // Activation
-    LogicalKeySet(LogicalKeyboardKey.enter): const ActivateIntent(),
-    LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
-    LogicalKeySet(LogicalKeyboardKey.gameButtonA): const ActivateIntent(),
-
-    // Dismissal
-    LogicalKeySet(LogicalKeyboardKey.escape): const DismissIntent(),
-    LogicalKeySet(LogicalKeyboardKey.gameButtonB): const ActivateIntent(),
+    LogicalKeySet(LogicalKeyboardKey.enter): const Intent(ActivateAction.key),
+    LogicalKeySet(LogicalKeyboardKey.space): const Intent(ActivateAction.key),
+    LogicalKeySet(LogicalKeyboardKey.gameButtonA): const Intent(ActivateAction.key),
 
     // Keyboard traversal.
-    LogicalKeySet(LogicalKeyboardKey.tab): const NextFocusIntent(),
-    LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab): const PreviousFocusIntent(),
+    LogicalKeySet(LogicalKeyboardKey.tab): const Intent(NextFocusAction.key),
+    LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab): const Intent(PreviousFocusAction.key),
     LogicalKeySet(LogicalKeyboardKey.arrowLeft): const DirectionalFocusIntent(TraversalDirection.left),
     LogicalKeySet(LogicalKeyboardKey.arrowRight): const DirectionalFocusIntent(TraversalDirection.right),
     LogicalKeySet(LogicalKeyboardKey.arrowDown): const DirectionalFocusIntent(TraversalDirection.down),
@@ -876,14 +869,11 @@ class WidgetsApp extends StatefulWidget {
   // Default shortcuts for the web platform.
   static final Map<LogicalKeySet, Intent> _defaultWebShortcuts = <LogicalKeySet, Intent>{
     // Activation
-    LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
-
-    // Dismissal
-    LogicalKeySet(LogicalKeyboardKey.escape): const DismissIntent(),
+    LogicalKeySet(LogicalKeyboardKey.space): const Intent(ActivateAction.key),
 
     // Keyboard traversal.
-    LogicalKeySet(LogicalKeyboardKey.tab): const NextFocusIntent(),
-    LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab): const PreviousFocusIntent(),
+    LogicalKeySet(LogicalKeyboardKey.tab): const Intent(NextFocusAction.key),
+    LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab): const Intent(PreviousFocusAction.key),
 
     // Scrolling
     LogicalKeySet(LogicalKeyboardKey.arrowUp): const ScrollIntent(direction: AxisDirection.up),
@@ -897,15 +887,12 @@ class WidgetsApp extends StatefulWidget {
   // Default shortcuts for the macOS platform.
   static final Map<LogicalKeySet, Intent> _defaultMacOsShortcuts = <LogicalKeySet, Intent>{
     // Activation
-    LogicalKeySet(LogicalKeyboardKey.enter): const ActivateIntent(),
-    LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
-
-    // Dismissal
-    LogicalKeySet(LogicalKeyboardKey.escape): const DismissIntent(),
+    LogicalKeySet(LogicalKeyboardKey.enter): const Intent(ActivateAction.key),
+    LogicalKeySet(LogicalKeyboardKey.space): const Intent(ActivateAction.key),
 
     // Keyboard traversal
-    LogicalKeySet(LogicalKeyboardKey.tab): const NextFocusIntent(),
-    LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab): const PreviousFocusIntent(),
+    LogicalKeySet(LogicalKeyboardKey.tab): const Intent(NextFocusAction.key),
+    LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab): const Intent(PreviousFocusAction.key),
     LogicalKeySet(LogicalKeyboardKey.arrowLeft): const DirectionalFocusIntent(TraversalDirection.left),
     LogicalKeySet(LogicalKeyboardKey.arrowRight): const DirectionalFocusIntent(TraversalDirection.right),
     LogicalKeySet(LogicalKeyboardKey.arrowDown): const DirectionalFocusIntent(TraversalDirection.down),
@@ -945,13 +932,13 @@ class WidgetsApp extends StatefulWidget {
   }
 
   /// The default value of [WidgetsApp.actions].
-  static Map<Type, Action<Intent>> defaultActions = <Type, Action<Intent>>{
-    DoNothingIntent: DoNothingAction(),
-    RequestFocusIntent: RequestFocusAction(),
-    NextFocusIntent: NextFocusAction(),
-    PreviousFocusIntent: PreviousFocusAction(),
-    DirectionalFocusIntent: DirectionalFocusAction(),
-    ScrollIntent: ScrollAction(),
+  static final Map<LocalKey, ActionFactory> defaultActions = <LocalKey, ActionFactory>{
+    DoNothingAction.key: () => const DoNothingAction(),
+    RequestFocusAction.key: () => RequestFocusAction(),
+    NextFocusAction.key: () => NextFocusAction(),
+    PreviousFocusAction.key: () => PreviousFocusAction(),
+    DirectionalFocusAction.key: () => DirectionalFocusAction(),
+    ScrollAction.key: () => ScrollAction(),
   };
 
   @override
@@ -1202,7 +1189,7 @@ class _WidgetsAppState extends State<WidgetsApp> with WidgetsBindingObserver {
         }
       }
       // countryCode-only match. When all else except default supported locale fails,
-      // attempt to match by country only, as a user is likely to be familiar with a
+      // attempt to match by country only, as a user is likely to be familar with a
       // language from their listed country.
       if (matchesCountryCode == null && userLocale.countryCode != null) {
         match = countryLocales[userLocale.countryCode];
@@ -1213,7 +1200,7 @@ class _WidgetsAppState extends State<WidgetsApp> with WidgetsBindingObserver {
     }
     // When there is no languageCode-only match. Fallback to matching countryCode only. Country
     // fallback only applies on iOS. When there is no countryCode-only match, we return first
-    // supported locale.
+    // suported locale.
     final Locale resolvedLocale = matchesLanguageCode ?? matchesCountryCode ?? supportedLocales.first;
     return resolvedLocale;
   }
@@ -1484,12 +1471,8 @@ class _MediaQueryFromWindowsState extends State<_MediaQueryFromWindow> with Widg
 
   @override
   Widget build(BuildContext context) {
-    MediaQueryData data = MediaQueryData.fromWindow(WidgetsBinding.instance.window);
-    if (!kReleaseMode) {
-      data = data.copyWith(platformBrightness: debugBrightnessOverride);
-    }
     return MediaQuery(
-      data: data,
+      data: MediaQueryData.fromWindow(WidgetsBinding.instance.window),
       child: widget.child,
     );
   }

@@ -2,14 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
 
 void main() {
-  testWidgets('Sliver with keep alive without key - should dispose after reordering', (WidgetTester tester) async {
+  testWidgets('Sliver with keep alive without key - should dispose after reodering', (WidgetTester tester) async {
     List<Widget> childList= <Widget>[
       const WidgetTest0(text: 'child 0', keepAlive: true),
       const WidgetTest1(text: 'child 1', keepAlive: true),
@@ -32,7 +30,7 @@ void main() {
     expect(state2.hasBeenDisposed, false);
   });
 
-  testWidgets('Sliver without keep alive without key - should dispose after reordering', (WidgetTester tester) async {
+  testWidgets('Sliver without keep alive without key - should dispose after reodering', (WidgetTester tester) async {
     List<Widget> childList= <Widget>[
       const WidgetTest0(text: 'child 0'),
       const WidgetTest1(text: 'child 1'),
@@ -55,7 +53,7 @@ void main() {
     expect(state2.hasBeenDisposed, false);
   });
 
-  testWidgets('Sliver without keep alive with key - should dispose after reordering', (WidgetTester tester) async {
+  testWidgets('Sliver without keep alive with key - should dispose after reodering', (WidgetTester tester) async {
     List<Widget> childList= <Widget>[
       WidgetTest0(text: 'child 0', key: GlobalKey()),
       WidgetTest1(text: 'child 1', key: GlobalKey()),
@@ -78,7 +76,7 @@ void main() {
     expect(state2.hasBeenDisposed, false);
   });
 
-  testWidgets('Sliver with keep alive with key - should not dispose after reordering', (WidgetTester tester) async {
+  testWidgets('Sliver with keep alive with key - should not dispose after reodering', (WidgetTester tester) async {
     List<Widget> childList= <Widget>[
       WidgetTest0(text: 'child 0', key: GlobalKey(), keepAlive: true),
       WidgetTest1(text: 'child 1', key: GlobalKey(), keepAlive: true),
@@ -100,7 +98,7 @@ void main() {
     expect(state2.hasBeenDisposed, false);
   });
 
-  testWidgets('Sliver with keep alive with Unique key - should not dispose after reordering', (WidgetTester tester) async {
+  testWidgets('Sliver with keep alive with Unique key - should not dispose after reodering', (WidgetTester tester) async {
     List<Widget> childList= <Widget>[
       WidgetTest0(text: 'child 0', key: UniqueKey(), keepAlive: true),
       WidgetTest1(text: 'child 1', key: UniqueKey(), keepAlive: true),
@@ -122,7 +120,7 @@ void main() {
     expect(state2.hasBeenDisposed, false);
   });
 
-  testWidgets('Sliver with keep alive with Value key - should not dispose after reordering', (WidgetTester tester) async {
+  testWidgets('Sliver with keep alive with Value key - should not dispose after reodering', (WidgetTester tester) async {
     List<Widget> childList= <Widget>[
       const WidgetTest0(text: 'child 0', key: ValueKey<int>(0), keepAlive: true),
       const WidgetTest1(text: 'child 1', key: ValueKey<int>(1), keepAlive: true),

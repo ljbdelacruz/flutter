@@ -18,7 +18,5 @@
   "cutButtonLabel": "Knip",
   "copyButtonLabel": "Kopieer",
   "pasteButtonLabel": "Plak",
-  "selectAllButtonLabel": "Kies alles",
-  "tabSemanticsLabel": "Oortjie $tabIndex van $tabCount",
-  "modalBarrierDismissLabel": "Maak toe"
+  "selectAllButtonLabel": "Kies alles"
 }

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:meta/meta.dart';
@@ -24,9 +22,6 @@ import 'object.dart';
 /// Trees of Flutter diagnostics can be very large so filtering the diagnostics
 /// shown matters. Typically filtering to only show diagnostics with at least
 /// level [debug] is appropriate.
-///
-/// In release mode, this level may not have any effect, as diagnostics in
-/// release mode are compacted or truncated to reduce binary size.
 enum DiagnosticLevel {
   /// Diagnostics that should not be shown.
   ///
@@ -89,11 +84,7 @@ enum DiagnosticLevel {
   /// filter which diagnostics are shown.
   off,
 }
-
 /// Styles for displaying a node in a [DiagnosticsNode] tree.
-///
-/// In release mode, these styles may be ignored, as diagnostics are compacted
-/// or truncated to save on binary size.
 ///
 /// See also:
 ///
@@ -188,9 +179,6 @@ enum DiagnosticsTreeStyle {
 
 /// Configuration specifying how a particular [DiagnosticsTreeStyle] should be
 /// rendered as text art.
-///
-/// In release mode, these configurations may be ignored, as diagnostics are
-/// compacted or truncated to save on binary size.
 ///
 /// See also:
 ///
@@ -1645,9 +1633,6 @@ abstract class DiagnosticsNode {
   ///
   /// `minLevel` specifies the minimum [DiagnosticLevel] for properties included
   /// in the output.
-  ///
-  /// In release mode, far less information is retained and some information may
-  /// not print at all.
   @override
   String toString({
     TextTreeConfiguration parentConfiguration,
@@ -1725,9 +1710,6 @@ abstract class DiagnosticsNode {
   ///
   /// The [toStringDeep] method takes other arguments, but those are intended
   /// for internal use when recursing to the descendants, and so can be ignored.
-  ///
-  /// In release mode, far less information is retained and some information may
-  /// not print at all.
   ///
   /// See also:
   ///
@@ -2913,7 +2895,7 @@ class DiagnosticsProperty<T> extends DiagnosticsNode {
 /// [DiagnosticsNode] that lazily calls the associated [Diagnosticable] [value]
 /// to implement [getChildren] and [getProperties].
 class DiagnosticableNode<T extends Diagnosticable> extends DiagnosticsNode {
-  /// Create a diagnostics describing a [Diagnosticable] value.
+  /// Create a diagnostics describing a [DiagnosticableMixin] value.
   ///
   /// The [value] argument must not be null.
   DiagnosticableNode({
@@ -3040,7 +3022,7 @@ String describeEnum(Object enumEntry) {
 }
 
 /// Builder to accumulate properties and configuration used to assemble a
-/// [DiagnosticsNode] from a [Diagnosticable] object.
+/// [DiagnosticsNode] from a [DiagnosticableMixin] object.
 class DiagnosticPropertiesBuilder {
   /// Creates a [DiagnosticPropertiesBuilder] with [properties] initialize to
   /// an empty array.
@@ -3065,6 +3047,48 @@ class DiagnosticPropertiesBuilder {
 
   /// Description to show if the node has no displayed properties or children.
   String emptyBodyDescription;
+}
+
+// TODO(gspencergoog): Remove DiagnosticableMixin once the mixin Diagnosticable is in stable.
+// https://github.com/flutter/flutter/issues/50498
+
+/// A mixin class implementing the [Diagnosticable] interface that provides
+/// string and [DiagnosticsNode] debug representations describing the properties
+/// of an object.
+///
+/// _This mixin exists only to support plugins and packages that require older
+/// Flutter versions: Use the identical mixin [Diagnosticable] instead for all
+/// new code. If you are authoring code that needs to work on the stable branch
+/// as well as master (in a package, for instance), mix this in instead of
+/// extending [Diagnosticable]. Once [Diagnosticable] as a mixin reaches the
+/// stable channel, this class will be deprecated._
+mixin DiagnosticableMixin implements Diagnosticable {
+  @override
+  String toStringShort() => describeIdentity(this);
+
+  @override
+  String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+    String fullString;
+    assert(() {
+      fullString = toDiagnosticsNode(style: DiagnosticsTreeStyle.singleLine).toString(minLevel: minLevel);
+      return true;
+    }());
+    return fullString ?? toStringShort();
+  }
+
+  @override
+  DiagnosticsNode toDiagnosticsNode({ String name, DiagnosticsTreeStyle style }) {
+    return DiagnosticableNode<Diagnosticable>(
+      name: name,
+      value: this,
+      style: style,
+    );
+  }
+
+  @override
+  @protected
+  @mustCallSuper
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) { }
 }
 
 // Examples can assume:
@@ -3353,7 +3377,7 @@ mixin Diagnosticable {
 /// See also:
 ///
 ///  * [DiagnosticableTreeMixin], a mixin that implements this class.
-///  * [Diagnosticable], which should be used instead of this class to
+///  * [DiagnosticableMixin], which should be used instead of this class to
 ///    provide diagnostics for objects without children.
 abstract class DiagnosticableTree with Diagnosticable {
   /// Abstract const constructor. This constructor enables subclasses to provide
@@ -3670,7 +3694,7 @@ abstract class DiagnosticsSerializationDelegate {
   ///    will be included.
   bool get includeProperties;
 
-  /// Whether properties that have a [Diagnosticable] as value should be
+  /// Whether properties that have a [DiagnosticableMixin] as value should be
   /// expanded.
   bool get expandPropertyValues;
 

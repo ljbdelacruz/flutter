@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 
 import 'basic_types.dart';
@@ -393,21 +391,26 @@ class Border extends BoxBorder {
   }
 
   @override
-  bool get isUniform => _colorIsUniform && _widthIsUniform && _styleIsUniform;
-
-  bool get _colorIsUniform {
+  bool get isUniform {
     final Color topColor = top.color;
-    return right.color == topColor && bottom.color == topColor && left.color == topColor;
-  }
+    if (right.color != topColor ||
+        bottom.color != topColor ||
+        left.color != topColor)
+      return false;
 
-  bool get _widthIsUniform {
     final double topWidth = top.width;
-    return right.width == topWidth && bottom.width == topWidth && left.width == topWidth;
-  }
+    if (right.width != topWidth ||
+        bottom.width != topWidth ||
+        left.width != topWidth)
+      return false;
 
-  bool get _styleIsUniform {
     final BorderStyle topStyle = top.style;
-    return right.style == topStyle && bottom.style == topStyle && left.style == topStyle;
+    if (right.style != topStyle ||
+        bottom.style != topStyle ||
+        left.style != topStyle)
+      return false;
+
+    return true;
   }
 
   @override
@@ -517,30 +520,8 @@ class Border extends BoxBorder {
       }
     }
 
-    assert(() {
-      if (borderRadius != null) {
-        throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary('A borderRadius can only be given for a uniform Border.'),
-          ErrorDescription('The following is not uniform:'),
-          if (!_colorIsUniform) ErrorDescription('BorderSide.color'),
-          if (!_widthIsUniform) ErrorDescription('BorderSide.width'),
-          if (!_styleIsUniform) ErrorDescription('BorderSide.style'),
-        ]);
-      }
-      return true;
-    }());
-    assert(() {
-      if (shape != BoxShape.rectangle) {
-        throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary('A Border can only be drawn as a circle if it is uniform'),
-          ErrorDescription('The following is not uniform:'),
-          if (!_colorIsUniform) ErrorDescription('BorderSide.color'),
-          if (!_widthIsUniform) ErrorDescription('BorderSide.width'),
-          if (!_styleIsUniform) ErrorDescription('BorderSide.style'),
-        ]);
-      }
-      return true;
-    }());
+    assert(borderRadius == null, 'A borderRadius can only be given for uniform borders.');
+    assert(shape == BoxShape.rectangle, 'A border can only be drawn as a circle if it is uniform.');
 
     paintBorder(canvas, rect, top: top, right: right, bottom: bottom, left: left);
   }

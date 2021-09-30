@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter/animation.dart';
@@ -173,20 +171,17 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
     @required ViewportOffset offset,
     double cacheExtent,
     CacheExtentStyle cacheExtentStyle = CacheExtentStyle.pixel,
-    Clip clipBehavior = Clip.hardEdge,
   }) : assert(axisDirection != null),
        assert(crossAxisDirection != null),
        assert(offset != null),
        assert(axisDirectionToAxis(axisDirection) != axisDirectionToAxis(crossAxisDirection)),
        assert(cacheExtentStyle != null),
        assert(cacheExtent != null || cacheExtentStyle == CacheExtentStyle.pixel),
-       assert(clipBehavior != null),
        _axisDirection = axisDirection,
        _crossAxisDirection = crossAxisDirection,
        _offset = offset,
        _cacheExtent = cacheExtent ?? RenderAbstractViewport.defaultCacheExtent,
-       _cacheExtentStyle = cacheExtentStyle,
-       _clipBehavior = clipBehavior;
+       _cacheExtentStyle = cacheExtentStyle;
 
   @override
   void describeSemanticsConfiguration(SemanticsConfiguration config) {
@@ -317,20 +312,6 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
     }
     _cacheExtentStyle = value;
     markNeedsLayout();
-  }
-
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.hardEdge], and must not be null.
-  Clip get clipBehavior => _clipBehavior;
-  Clip _clipBehavior = Clip.hardEdge;
-  set clipBehavior(Clip value) {
-    assert(value != null);
-    if (value != _clipBehavior) {
-      _clipBehavior = value;
-      markNeedsPaint();
-      markNeedsSemanticsUpdate();
-    }
   }
 
   @override
@@ -593,8 +574,8 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
   void paint(PaintingContext context, Offset offset) {
     if (firstChild == null)
       return;
-    if (hasVisualOverflow && clipBehavior != Clip.none) {
-      context.pushClipRect(needsCompositing, offset, Offset.zero & size, _paintContents, clipBehavior: clipBehavior);
+    if (hasVisualOverflow) {
+      context.pushClipRect(needsCompositing, offset, Offset.zero & size, _paintContents);
     } else {
       _paintContents(context, offset);
     }
@@ -802,6 +783,7 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
     final double offsetDifference = offset.pixels - targetOffset;
 
     final Matrix4 transform = target.getTransformTo(this);
+    applyPaintTransform(child, transform);
     Rect targetRect = MatrixUtils.transformRect(transform, rect);
 
     switch (axisDirection) {
@@ -946,7 +928,7 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
   ///
   /// The `parentMainAxisPosition` is a distance from the top edge (for vertical
   /// viewports) or left edge (for horizontal viewports) of the viewport bounds.
-  /// This describes a line, perpendicular to the viewport's main axis, heretofore
+  /// This describes a line, perpendicular to the viewport's main axis, heretofor
   /// known as the target line.
   ///
   /// The child's coordinate system's origin in the main axis is at the leading
@@ -1155,11 +1137,9 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
     RenderSliver center,
     double cacheExtent,
     CacheExtentStyle cacheExtentStyle = CacheExtentStyle.pixel,
-    Clip clipBehavior = Clip.hardEdge,
   }) : assert(anchor != null),
        assert(anchor >= 0.0 && anchor <= 1.0),
        assert(cacheExtentStyle != CacheExtentStyle.viewport || cacheExtent != null),
-       assert(clipBehavior != null),
        _anchor = anchor,
        _center = center,
        super(
@@ -1168,7 +1148,6 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
          offset: offset,
          cacheExtent: cacheExtent,
          cacheExtentStyle: cacheExtentStyle,
-         clipBehavior: clipBehavior,
        ) {
     addAll(children);
     if (center == null && firstChild != null)
@@ -1680,14 +1659,8 @@ class RenderShrinkWrappingViewport extends RenderViewportBase<SliverLogicalConta
     AxisDirection axisDirection = AxisDirection.down,
     @required AxisDirection crossAxisDirection,
     @required ViewportOffset offset,
-    Clip clipBehavior = Clip.hardEdge,
     List<RenderSliver> children,
-  }) : super(
-        axisDirection: axisDirection,
-        crossAxisDirection: crossAxisDirection,
-        offset: offset,
-        clipBehavior: clipBehavior,
-       ) {
+  }) : super(axisDirection: axisDirection, crossAxisDirection: crossAxisDirection, offset: offset) {
     addAll(children);
   }
 

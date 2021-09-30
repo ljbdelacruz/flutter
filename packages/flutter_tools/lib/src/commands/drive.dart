@@ -5,25 +5,22 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:vm_service/vm_service_io.dart' as vm_service;
-import 'package:vm_service/vm_service.dart' as vm_service;
 import 'package:meta/meta.dart';
 import 'package:webdriver/async_io.dart' as async_io;
 
-import '../android/android_device.dart';
 import '../application_package.dart';
-import '../artifacts.dart';
 import '../base/common.dart';
 import '../base/file_system.dart';
 import '../base/process.dart';
 import '../build_info.dart';
+import '../cache.dart';
 import '../dart/package_map.dart';
+import '../dart/sdk.dart';
 import '../device.dart';
 import '../globals.dart' as globals;
 import '../project.dart';
 import '../resident_runner.dart';
-import '../runner/flutter_command.dart' show FlutterCommandResult, FlutterOptions;
-import '../vmservice.dart';
+import '../runner/flutter_command.dart' show FlutterCommandResult;
 import '../web/web_runner.dart';
 import 'run.dart';
 
@@ -114,12 +111,7 @@ class DriveCommand extends RunCommandBase {
           'Works only if \'browser-name\' is set to \'android-chrome\'')
       ..addOption('chrome-binary',
         help: 'Location of Chrome binary. '
-          'Works only if \'browser-name\' is set to \'chrome\'')
-      ..addOption('write-sksl-on-exit',
-        help:
-          'Attempts to write an SkSL file when the drive process is finished '
-          'to the provided file, overwriting it if necessary.',
-      );
+          'Works only if \'browser-name\' is set to \'chrome\'');
   }
 
   @override
@@ -136,22 +128,10 @@ class DriveCommand extends RunCommandBase {
   bool get shouldBuild => boolArg('build');
 
   bool get verboseSystemLogs => boolArg('verbose-system-logs');
-  String get userIdentifier => stringArg(FlutterOptions.kDeviceUser);
 
   /// Subscription to log messages printed on the device or simulator.
   // ignore: cancel_subscriptions
   StreamSubscription<String> _deviceLogSubscription;
-
-  @override
-  Future<void> validateCommand() async {
-    if (userIdentifier != null) {
-      final Device device = await findTargetDevice();
-      if (device is! AndroidDevice) {
-        throwToolExit('--${FlutterOptions.kDeviceUser} is only supported for Android');
-      }
-    }
-    return super.validateCommand();
-  }
 
   @override
   Future<FlutterCommandResult> runCommand() async {
@@ -207,7 +187,7 @@ class DriveCommand extends RunCommandBase {
           device,
           flutterProject: flutterProject,
           target: targetFile,
-          buildInfo: buildInfo,
+          buildInfo: buildInfo
         );
         residentRunner = webRunnerFactory.createWebRunner(
           flutterDevice,
@@ -248,6 +228,8 @@ class DriveCommand extends RunCommandBase {
       globals.printStatus('Will connect to already running application instance.');
       observatoryUri = stringArg('use-existing-app');
     }
+
+    Cache.releaseLockEarly();
 
     final Map<String, String> environment = <String, String>{
       'VM_SERVICE_URL': observatoryUri,
@@ -321,17 +303,6 @@ $ex
     } finally {
       await residentRunner?.exit();
       await driver?.quit();
-      if (stringArg('write-sksl-on-exit') != null) {
-        final File outputFile = globals.fs.file(stringArg('write-sksl-on-exit'));
-        final vm_service.VmService vmService = await connectToVmService(
-          Uri.parse(observatoryUri),
-        );
-        final FlutterView flutterView = (await vmService.getFlutterViews()).first;
-        final Map<String, Object> result = await vmService.getSkSLs(
-          viewId: flutterView.id
-        );
-        await sharedSkSlWriter(_device, result, outputFile: outputFile);
-      }
       if (boolArg('keep-app-running') ?? (argResults['use-existing-app'] != null)) {
         globals.printStatus('Leaving the application running.');
       } else {
@@ -422,11 +393,7 @@ void restoreAppStarter() {
   appStarter = _startApp;
 }
 
-Future<LaunchResult> _startApp(
-  DriveCommand command,
-  Uri webUri, {
-  String userIdentifier,
-}) async {
+Future<LaunchResult> _startApp(DriveCommand command, Uri webUri) async {
   final String mainPath = findMainDartFile(command.targetFile);
   if (await globals.fs.type(mainPath) != FileSystemEntityType.file) {
     globals.printError('Tried to run $mainPath, but that file does not exist.');
@@ -437,14 +404,14 @@ Future<LaunchResult> _startApp(
   await appStopper(command);
 
   final ApplicationPackage package = await command.applicationPackages
-      .getPackageForPlatform(await command.device.targetPlatform, command.getBuildInfo());
+      .getPackageForPlatform(await command.device.targetPlatform);
 
   if (command.shouldBuild) {
     globals.printTrace('Installing application package.');
-    if (await command.device.isAppInstalled(package, userIdentifier: userIdentifier)) {
-      await command.device.uninstallApp(package, userIdentifier: userIdentifier);
+    if (await command.device.isAppInstalled(package)) {
+      await command.device.uninstallApp(package);
     }
-    await command.device.installApp(package, userIdentifier: userIdentifier);
+    await command.device.installApp(package);
   }
 
   final Map<String, dynamic> platformArgs = <String, dynamic>{};
@@ -483,7 +450,6 @@ Future<LaunchResult> _startApp(
     ),
     platformArgs: platformArgs,
     prebuiltApplication: !command.shouldBuild,
-    userIdentifier: userIdentifier,
   );
 
   if (!result.started) {
@@ -504,12 +470,14 @@ void restoreTestRunner() {
 Future<void> _runTests(List<String> testArgs, Map<String, String> environment) async {
   globals.printTrace('Running driver tests.');
 
-  globalPackagesPath = globals.fs.path.normalize(globals.fs.path.absolute(globalPackagesPath));
+  PackageMap.globalPackagesPath = globals.fs.path.normalize(globals.fs.path.absolute(PackageMap.globalPackagesPath));
+  final String dartVmPath = globals.fs.path.join(dartSdkPath, 'bin', 'dart');
   final int result = await processUtils.stream(
     <String>[
-      globals.artifacts.getArtifactPath(Artifact.engineDartBinary),
+      dartVmPath,
+      ...dartVmFlags,
       ...testArgs,
-      '--packages=$globalPackagesPath',
+      '--packages=${PackageMap.globalPackagesPath}',
       '-rexpanded',
     ],
     environment: environment,
@@ -529,11 +497,8 @@ void restoreAppStopper() {
 
 Future<bool> _stopApp(DriveCommand command) async {
   globals.printTrace('Stopping application.');
-  final ApplicationPackage package = await command.applicationPackages.getPackageForPlatform(
-    await command.device.targetPlatform,
-    command.getBuildInfo(),
-  );
-  final bool stopped = await command.device.stopApp(package, userIdentifier: command.userIdentifier);
+  final ApplicationPackage package = await command.applicationPackages.getPackageForPlatform(await command.device.targetPlatform);
+  final bool stopped = await command.device.stopApp(package);
   await command._deviceLogSubscription?.cancel();
   return stopped;
 }

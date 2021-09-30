@@ -5,15 +5,15 @@
 import 'package:file/memory.dart';
 import 'package:flutter_tools/src/artifacts.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/build_info.dart';
 import 'package:flutter_tools/src/build_system/build_system.dart';
 import 'package:flutter_tools/src/build_system/exceptions.dart';
-import 'package:flutter_tools/src/build_system/targets/common.dart';
+import 'package:flutter_tools/src/build_system/targets/dart.dart';
 import 'package:flutter_tools/src/build_system/targets/ios.dart';
 import 'package:flutter_tools/src/cache.dart';
 import 'package:flutter_tools/src/compile.dart';
 import 'package:flutter_tools/src/globals.dart' as globals;
+import 'package:platform/platform.dart';
 import 'package:process/process.dart';
 
 import '../../../src/common.dart';
@@ -77,7 +77,7 @@ void main() {
     androidEnvironment.defines.remove(kBuildMode);
     expect(
       const KernelSnapshot().build(androidEnvironment),
-      throwsA(isA<MissingDefineException>()));
+      throwsA(isInstanceOf<MissingDefineException>()));
   }));
 
   test('KernelSnapshot handles null result from kernel compilation', () => testbed.run(() async {
@@ -86,7 +86,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -116,7 +115,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -146,7 +144,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -177,7 +174,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -210,7 +206,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -241,7 +236,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -284,7 +278,6 @@ void main() {
     processManager = FakeProcessManager.list(<FakeCommand>[
       FakeCommand(command: <String>[
         artifacts.getArtifactPath(Artifact.engineDartBinary),
-        '--disable-dart-dev',
         artifacts.getArtifactPath(Artifact.frontendServerSnapshotForEngineDartSdk),
         '--sdk-root',
         artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath) + '/',
@@ -326,7 +319,7 @@ void main() {
     ]);
     androidEnvironment.buildDir.childFile('app.dill').createSync(recursive: true);
 
-    await const AotElfProfile(TargetPlatform.android_arm).build(androidEnvironment);
+    await const AotElfProfile().build(androidEnvironment);
 
     expect(processManager.hasRemainingExpectations, false);
   }));
@@ -334,34 +327,34 @@ void main() {
   test('AotElfProfile throws error if missing build mode', () => testbed.run(() async {
     androidEnvironment.defines.remove(kBuildMode);
 
-    expect(const AotElfProfile(TargetPlatform.android_arm).build(androidEnvironment),
-      throwsA(isA<MissingDefineException>()));
+    expect(const AotElfProfile().build(androidEnvironment),
+      throwsA(isInstanceOf<MissingDefineException>()));
   }));
 
   test('AotElfProfile throws error if missing target platform', () => testbed.run(() async {
     androidEnvironment.defines.remove(kTargetPlatform);
 
-    expect(const AotElfProfile(TargetPlatform.android_arm).build(androidEnvironment),
-      throwsA(isA<MissingDefineException>()));
+    expect(const AotElfProfile().build(androidEnvironment),
+      throwsA(isInstanceOf<MissingDefineException>()));
   }));
 
   test('AotAssemblyProfile throws error if missing build mode', () => testbed.run(() async {
     iosEnvironment.defines.remove(kBuildMode);
 
     expect(const AotAssemblyProfile().build(iosEnvironment),
-      throwsA(isA<MissingDefineException>()));
+      throwsA(isInstanceOf<MissingDefineException>()));
   }));
 
   test('AotAssemblyProfile throws error if missing target platform', () => testbed.run(() async {
     iosEnvironment.defines.remove(kTargetPlatform);
 
     expect(const AotAssemblyProfile().build(iosEnvironment),
-      throwsA(isA<MissingDefineException>()));
+      throwsA(isInstanceOf<MissingDefineException>()));
   }));
 
   test('AotAssemblyProfile throws error if built for non-iOS platform', () => testbed.run(() async {
     expect(const AotAssemblyProfile().build(androidEnvironment),
-      throwsA(isA<Exception>()));
+      throwsA(isInstanceOf<Exception>()));
   }));
 
   test('AotAssemblyProfile generates multiple arches and lipos together', () => testbed.run(() async {
@@ -587,7 +580,7 @@ void main() {
       ]),
     ]);
 
-    await const AotElfRelease(TargetPlatform.android_arm).build(androidEnvironment);
+    await const AotElfRelease().build(androidEnvironment);
 
     expect(processManager.hasRemainingExpectations, false);
   }));

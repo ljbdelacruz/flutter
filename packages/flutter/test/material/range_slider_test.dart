@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
@@ -19,28 +17,26 @@ void main() {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -48,7 +44,7 @@ void main() {
     // No thumbs get select when tapping between the thumbs outside the touch
     // boundaries
     expect(values, equals(const RangeValues(0.3, 0.7)));
-    //  taps at 0.5
+    // taps at 0.5
     await tester.tap(find.byType(RangeSlider));
     await tester.pump();
     expect(values, equals(const RangeValues(0.3, 0.7)));
@@ -76,28 +72,26 @@ void main() {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -133,31 +127,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0.0,
-                      max: 100.0,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0.0,
+                    max: 100.0,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -195,31 +187,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -253,32 +243,30 @@ void main() {
     expect(values.end.round(), equals(90));
   });
 
-  testWidgets('Range Slider thumbs can be dragged to the min and max (continuous LTR)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged to the min and max (continous LTR)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -300,32 +288,30 @@ void main() {
     expect(values.end, equals(1));
   });
 
-  testWidgets('Range Slider thumbs can be dragged to the min and max (continuous RTL)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged to the min and max (continous RTL)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -351,31 +337,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -401,31 +385,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -447,32 +429,30 @@ void main() {
     expect(values.start, equals(0));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continuous LTR)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continous LTR)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -500,32 +480,30 @@ void main() {
     expect(values.start, closeTo(0.2, 0.05));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continuous RTL)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continous RTL)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -557,31 +535,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -613,31 +589,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -665,32 +639,30 @@ void main() {
     expect(values.start, closeTo(20, 0.01));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continuous LTR)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continous LTR)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -718,32 +690,30 @@ void main() {
     expect(values.end, closeTo(0.8, 0.05));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continuous RTL)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continous RTL)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -775,31 +745,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -831,31 +799,29 @@ void main() {
     RangeValues values = const RangeValues(30, 70);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      divisions: 10,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    divisions: 10,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -889,36 +855,34 @@ void main() {
     RangeValues endValues;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                      onChangeStart: (RangeValues newValues) {
-                        startValues = newValues;
-                      },
-                      onChangeEnd: (RangeValues newValues) {
-                        endValues = newValues;
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
+                    onChangeStart: (RangeValues newValues) {
+                      startValues = newValues;
+                    },
+                    onChangeEnd: (RangeValues newValues) {
+                      endValues = newValues;
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -947,36 +911,34 @@ void main() {
     RangeValues endValues;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: RangeSlider(
-                      values: values,
-                      min: 0,
-                      max: 100,
-                      onChanged: (RangeValues newValues) {
-                        setState(() {
-                          values = newValues;
-                        });
-                      },
-                      onChangeStart: (RangeValues newValues) {
-                        startValues = newValues;
-                      },
-                      onChangeEnd: (RangeValues newValues) {
-                        endValues = newValues;
-                      },
-                    ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: RangeSlider(
+                    values: values,
+                    min: 0,
+                    max: 100,
+                    onChanged: (RangeValues newValues) {
+                      setState(() {
+                        values = newValues;
+                      });
+                    },
+                    onChangeStart: (RangeValues newValues) {
+                      startValues = newValues;
+                    },
+                    onChangeEnd: (RangeValues newValues) {
+                      endValues = newValues;
+                    },
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -1038,23 +1000,21 @@ void main() {
     final ValueChanged<RangeValues> onChanged = !enabled ? null : (RangeValues newValues) {
       values = newValues;
     };
-    return MaterialApp(
-      home: Directionality(
-        textDirection: TextDirection.ltr,
-        child: MediaQuery(
-          data: MediaQueryData.fromWindow(window),
-          child: Material(
-            child: Center(
-              child: Theme(
-                data: theme,
-                child: RangeSlider(
-                  values: values,
-                  labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
-                  divisions: divisions,
-                  activeColor: activeColor,
-                  inactiveColor: inactiveColor,
-                  onChanged: onChanged,
-                ),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: MediaQuery(
+        data: MediaQueryData.fromWindow(window),
+        child: Material(
+          child: Center(
+            child: Theme(
+              data: theme,
+              child: RangeSlider(
+                values: values,
+                labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
+                divisions: divisions,
+                activeColor: activeColor,
+                inactiveColor: inactiveColor,
+                onChanged: onChanged,
               ),
             ),
           ),
@@ -1073,9 +1033,9 @@ void main() {
 
     // Check default theme for enabled widget.
     expect(sliderBox, paints
-      ..rrect(color: sliderTheme.inactiveTrackColor)
+      ..rect(color: sliderTheme.inactiveTrackColor)
       ..rect(color: sliderTheme.activeTrackColor)
-      ..rrect(color: sliderTheme.inactiveTrackColor));
+      ..rect(color: sliderTheme.inactiveTrackColor));
     expect(sliderBox, paints
       ..circle(color: sliderTheme.thumbColor)
       ..circle(color: sliderTheme.thumbColor));
@@ -1098,9 +1058,9 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: sliderTheme.inactiveTrackColor)
+          ..rect(color: sliderTheme.inactiveTrackColor)
           ..rect(color: activeColor)
-          ..rrect(color: sliderTheme.inactiveTrackColor));
+          ..rect(color: sliderTheme.inactiveTrackColor));
     expect(
         sliderBox,
         paints
@@ -1124,9 +1084,9 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: inactiveColor)
+          ..rect(color: inactiveColor)
           ..rect(color: sliderTheme.activeTrackColor)
-          ..rrect(color: inactiveColor));
+          ..rect(color: inactiveColor));
     expect(
         sliderBox,
         paints
@@ -1154,9 +1114,9 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: inactiveColor)
+          ..rect(color: inactiveColor)
           ..rect(color: activeColor)
-          ..rrect(color: inactiveColor));
+          ..rect(color: inactiveColor));
     expect(
         sliderBox,
         paints
@@ -1179,9 +1139,9 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: sliderTheme.inactiveTrackColor)
+          ..rect(color: sliderTheme.inactiveTrackColor)
           ..rect(color: sliderTheme.activeTrackColor)
-          ..rrect(color: sliderTheme.inactiveTrackColor));
+          ..rect(color: sliderTheme.inactiveTrackColor));
     expect(
         sliderBox,
         paints
@@ -1215,9 +1175,9 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: inactiveColor)
+          ..rect(color: inactiveColor)
           ..rect(color: activeColor)
-          ..rrect(color: inactiveColor));
+          ..rect(color: inactiveColor));
     expect(
         sliderBox,
         paints
@@ -1246,12 +1206,13 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: sliderTheme.disabledInactiveTrackColor)
+          ..rect(color: sliderTheme.disabledInactiveTrackColor)
           ..rect(color: sliderTheme.disabledActiveTrackColor)
-          ..rrect(color: sliderTheme.disabledInactiveTrackColor));
+          ..rect(color: sliderTheme.disabledInactiveTrackColor));
     expect(sliderBox, isNot(paints..circle(color: sliderTheme.thumbColor)));
     expect(sliderBox, isNot(paints..rect(color: sliderTheme.activeTrackColor)));
     expect(sliderBox, isNot(paints..rect(color: sliderTheme.inactiveTrackColor)));
+
   });
 
   testWidgets('Range Slider uses the right theme colors for the right shapes for a disabled slider with active and inactive colors', (WidgetTester tester) async {
@@ -1272,15 +1233,17 @@ void main() {
     expect(
         sliderBox,
         paints
-          ..rrect(color: sliderTheme.disabledInactiveTrackColor)
+          ..rect(color: sliderTheme.disabledInactiveTrackColor)
           ..rect(color: sliderTheme.disabledActiveTrackColor)
-          ..rrect(color: sliderTheme.disabledInactiveTrackColor));
+          ..rect(color: sliderTheme.disabledInactiveTrackColor));
     expect(sliderBox, isNot(paints..circle(color: sliderTheme.thumbColor)));
     expect(sliderBox, isNot(paints..rect(color: sliderTheme.activeTrackColor)));
     expect(sliderBox, isNot(paints..rect(color: sliderTheme.inactiveTrackColor)));
   });
 
   testWidgets('Range Slider uses the right theme colors for the right shapes when the value indicators are showing', (WidgetTester tester) async {
+    const Color customColor1 = Color(0xcafefeed);
+    const Color customColor2 = Color(0xdeadbeef);
     final ThemeData theme = _buildTheme();
     final SliderThemeData sliderTheme = theme.sliderTheme;
     RangeValues values = const RangeValues(0.5, 0.75);
@@ -1294,23 +1257,21 @@ void main() {
       final ValueChanged<RangeValues> onChanged = !enabled ? null : (RangeValues newValues) {
         values = newValues;
       };
-      return MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: MediaQuery(
-            data: MediaQueryData.fromWindow(window),
-            child: Material(
-              child: Center(
-                child: Theme(
-                  data: theme,
-                  child: RangeSlider(
-                    values: values,
-                    labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
-                    divisions: divisions,
-                    activeColor: activeColor,
-                    inactiveColor: inactiveColor,
-                    onChanged: onChanged,
-                  ),
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: MediaQuery(
+          data: MediaQueryData.fromWindow(window),
+          child: Material(
+            child: Center(
+              child: Theme(
+                data: theme,
+                child: RangeSlider(
+                  values: values,
+                  labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
+                  divisions: divisions,
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                  onChanged: onChanged,
                 ),
               ),
             ),
@@ -1321,166 +1282,79 @@ void main() {
 
     await tester.pumpWidget(buildApp(divisions: 3));
 
-    final RenderBox valueIndicatorBox = tester.renderObject(find.byType(Overlay));
+    final RenderBox sliderBox = tester.firstRenderObject<RenderBox>(find.byType(RangeSlider));
 
     final Offset topRight = tester.getTopRight(find.byType(RangeSlider)).translate(-24, 0);
-    final TestGesture gesture = await tester.startGesture(topRight);
+    TestGesture gesture = await tester.startGesture(topRight);
     // Wait for value indicator animation to finish.
     await tester.pumpAndSettle();
     expect(values.end, equals(1));
     expect(
-      valueIndicatorBox,
+      sliderBox,
       paints
         ..path(color: sliderTheme.valueIndicatorColor)
-        ..paragraph()
+        ..path(color: sliderTheme.valueIndicatorColor),
     );
     await gesture.up();
     // Wait for value indicator animation to finish.
     await tester.pumpAndSettle();
-  });
 
-  testWidgets('Range Slider removes value indicator from overlay if Slider gets disposed without value indicator animation completing.', (WidgetTester tester) async {
-    RangeValues values = const RangeValues(0.5, 0.75);
-    const Color fillColor = Color(0xf55f5f5f);
-
-    Widget buildApp({
-      Color activeColor,
-      Color inactiveColor,
-      int divisions,
-      bool enabled = true,
-    }) {
-      final ValueChanged<RangeValues> onChanged = (RangeValues newValues) {
-        values = newValues;
-      };
-      return MaterialApp(
-        home: Scaffold(
-          // The builder is used to pass the context from the MaterialApp widget
-          // to the [Navigator]. This context is required in order for the
-          // Navigator to work.
-          body: Builder(
-            builder: (BuildContext context) {
-              return Column(
-                children: <Widget>[
-                  RangeSlider(
-                    values: values,
-                    labels: RangeLabels(
-                      values.start.toStringAsFixed(2),
-                      values.end.toStringAsFixed(2),
-                    ),
-                    divisions: divisions,
-                    onChanged: onChanged,
-                  ),
-                  RaisedButton(
-                    child: const Text('Next'),
-                    onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute<void>(
-                          builder: (BuildContext context) {
-                            return RaisedButton(
-                              child: const Text('Inner page'),
-                              onPressed: () { Navigator.of(context).pop(); },
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      );
-    }
-
-    await tester.pumpWidget(buildApp(divisions: 3));
-
-    final RenderObject valueIndicatorBox = tester.renderObject(find.byType(Overlay));
-    final Offset topRight = tester.getTopRight(find.byType(RangeSlider)).translate(-24, 0);
-    final TestGesture gesture = await tester.startGesture(topRight);
+    // Testing the custom colors are used for the indicator.
+    await tester.pumpWidget(buildApp(
+      divisions: 3,
+      activeColor: customColor1,
+      inactiveColor: customColor2,
+    ));
+    gesture = await tester.startGesture(topRight);
     // Wait for value indicator animation to finish.
     await tester.pumpAndSettle();
-
+    expect(values.end, equals(1));
     expect(
-      valueIndicatorBox,
+      sliderBox,
       paints
-      // Represents the raised button wth next text.
-      ..path(color: Colors.black)
-      ..paragraph()
-      // Represents the range slider.
-      ..path(color: fillColor)
-      ..paragraph()
-      ..path(color: fillColor)
-      ..paragraph(),
+        ..path(color: customColor1)
+        ..path(color: customColor1),
     );
-
-    // Represents the Raised Button and Range Slider.
-    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawPath, 3));
-    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawParagraph, 3));
-
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(RangeSlider), findsNothing);
-    expect(
-      valueIndicatorBox,
-      isNot(
-       paints
-         ..path(color: fillColor)
-         ..paragraph()
-         ..path(color: fillColor)
-         ..paragraph(),
-      ),
-    );
-
-    // Represents the raised button with inner page text.
-    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawPath, 1));
-    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawParagraph, 1));
-
-    // Don't stop holding the value indicator.
     await gesture.up();
-    await tester.pumpAndSettle();
   });
 
   testWidgets('Range Slider top thumb gets stroked when overlapping', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     final ThemeData theme = ThemeData(
-      platform: TargetPlatform.android,
-      primarySwatch: Colors.blue,
-      sliderTheme: const SliderThemeData(
-        thumbColor: Color(0xff000001),
-        overlappingShapeStrokeColor: Color(0xff000002),
-      ),
+        platform: TargetPlatform.android,
+        primarySwatch: Colors.blue,
+        sliderTheme: const SliderThemeData(
+          thumbColor: Color(0xff000001),
+          overlappingShapeStrokeColor: Color(0xff000002),
+        ),
     );
     final SliderThemeData sliderTheme = theme.sliderTheme;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: Theme(
-                      data: theme,
-                      child: RangeSlider(
-                        values: values,
-                        onChanged: (RangeValues newValues) {
-                          setState(() {
-                            values = newValues;
-                          });
-                        },
-                      ),
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
+                child: Center(
+                  child: Theme(
+                    data: theme,
+                    child: RangeSlider(
+                      values: values,
+                      onChanged: (RangeValues newValues) {
+                        setState(() {
+                          values = newValues;
+                        });
+                      },
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -1516,172 +1390,24 @@ void main() {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     final ThemeData theme = ThemeData(
-      platform: TargetPlatform.android,
-      primarySwatch: Colors.blue,
-      sliderTheme: const SliderThemeData(
-        valueIndicatorColor: Color(0xff000001),
-        overlappingShapeStrokeColor: Color(0xff000002),
-        showValueIndicator: ShowValueIndicator.always,
-      ),
-    );
-    final SliderThemeData sliderTheme = theme.sliderTheme;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window),
-                child: Material(
-                  child: Center(
-                    child: Theme(
-                      data: theme,
-                      child: RangeSlider(
-                        values: values,
-                        labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
-                        onChanged: (RangeValues newValues) {
-                          setState(() {
-                            values = newValues;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+        platform: TargetPlatform.android,
+        primarySwatch: Colors.blue,
+        sliderTheme: const SliderThemeData(
+          valueIndicatorColor: Color(0xff000001),
+          overlappingShapeStrokeColor: Color(0xff000002),
+          showValueIndicator: ShowValueIndicator.always,
         ),
-      ),
-    );
-
-    final RenderBox valueIndicatorBox = tester.renderObject(find.byType(Overlay));
-
-    // Get the bounds of the track by finding the slider edges and translating
-    // inwards by the overlay radius.
-    final Offset topLeft = tester.getTopLeft(find.byType(RangeSlider)).translate(24, 0);
-    final Offset bottomRight = tester.getBottomRight(find.byType(RangeSlider)).translate(-24, 0);
-    final Offset middle = topLeft + bottomRight / 2;
-
-    // Drag the thumbs towards the center.
-    final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
-    await tester.dragFrom(leftTarget, middle - leftTarget);
-    await tester.pumpAndSettle();
-    final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
-    await tester.dragFrom(rightTarget, middle - rightTarget);
-    await tester.pumpAndSettle();
-    expect(values.start, closeTo(0.5, 0.03));
-    expect(values.end, closeTo(0.5, 0.03));
-    final TestGesture gesture = await tester.startGesture(middle);
-    await tester.pumpAndSettle();
-
-    expect(
-      valueIndicatorBox,
-      paints
-        ..path(color: sliderTheme.valueIndicatorColor)
-        ..paragraph()
-    );
-
-    await gesture.up();
-  });
-
-  testWidgets('Range Slider top value indicator gets stroked when overlapping with large text scale', (WidgetTester tester) async {
-    RangeValues values = const RangeValues(0.3, 0.7);
-
-    final ThemeData theme = ThemeData(
-      platform: TargetPlatform.android,
-      primarySwatch: Colors.blue,
-      sliderTheme: const SliderThemeData(
-        valueIndicatorColor: Color(0xff000001),
-        overlappingShapeStrokeColor: Color(0xff000002),
-        showValueIndicator: ShowValueIndicator.always,
-      ),
     );
     final SliderThemeData sliderTheme = theme.sliderTheme;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return MediaQuery(
-                data: MediaQueryData.fromWindow(window).copyWith(textScaleFactor: 2.0),
-                child: Material(
-                  child: Center(
-                    child: Theme(
-                      data: theme,
-                      child: RangeSlider(
-                        values: values,
-                        labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
-                        onChanged: (RangeValues newValues) {
-                          setState(() {
-                            values = newValues;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-
-    final RenderBox valueIndicatorBox = tester.renderObject(find.byType(Overlay));
-
-    // Get the bounds of the track by finding the slider edges and translating
-    // inwards by the overlay radius.
-    final Offset topLeft = tester.getTopLeft(find.byType(RangeSlider)).translate(24, 0);
-    final Offset bottomRight = tester.getBottomRight(find.byType(RangeSlider)).translate(-24, 0);
-    final Offset middle = topLeft + bottomRight / 2;
-
-    // Drag the thumbs towards the center.
-    final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
-    await tester.dragFrom(leftTarget, middle - leftTarget);
-    await tester.pumpAndSettle();
-    final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
-    await tester.dragFrom(rightTarget, middle - rightTarget);
-    await tester.pumpAndSettle();
-    expect(values.start, closeTo(0.5, 0.03));
-    expect(values.end, closeTo(0.5, 0.03));
-    final TestGesture gesture = await tester.startGesture(middle);
-    await tester.pumpAndSettle();
-
-    expect(
-      valueIndicatorBox,
-      paints
-        ..path(color: sliderTheme.valueIndicatorColor)
-        ..paragraph()
-    );
-
-    await gesture.up();
-  });
-
-  testWidgets('Range Slider thumb gets stroked when overlapping', (WidgetTester tester) async {
-    RangeValues values = const RangeValues(0.3, 0.7);
-
-    final ThemeData theme = ThemeData(
-      platform: TargetPlatform.android,
-      primarySwatch: Colors.blue,
-      sliderTheme: const SliderThemeData(
-        valueIndicatorColor: Color(0xff000001),
-        showValueIndicator: ShowValueIndicator.onlyForContinuous,
-      ),
-    );
-    final SliderThemeData sliderTheme = theme.sliderTheme;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return Material(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window),
+              child: Material(
                 child: Center(
                   child: Theme(
                     data: theme,
@@ -1696,12 +1422,14 @@ void main() {
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
+
+    final RenderBox sliderBox = tester.firstRenderObject<RenderBox>(find.byType(RangeSlider));
 
     // Get the bounds of the track by finding the slider edges and translating
     // inwards by the overlay radius.
@@ -1721,25 +1449,89 @@ void main() {
     final TestGesture gesture = await tester.startGesture(middle);
     await tester.pumpAndSettle();
 
-    /// The first circle is the thumb, the second one is the overlapping shape
-    /// circle, and the last one is the second thumb.
     expect(
-        find.byType(RangeSlider),
+        sliderBox,
         paints
-          ..circle()
-          ..circle(color: sliderTheme.overlappingShapeStrokeColor)
-          ..circle()
+          ..path(color: sliderTheme.valueIndicatorColor)
+          ..path(color: sliderTheme.overlappingShapeStrokeColor)
+          ..path(color: sliderTheme.valueIndicatorColor),
     );
 
     await gesture.up();
+  });
+
+  testWidgets('Range Slider top value indicator gets stroked when overlapping with large text scale', (WidgetTester tester) async {
+    RangeValues values = const RangeValues(0.3, 0.7);
+
+    final ThemeData theme = ThemeData(
+        platform: TargetPlatform.android,
+        primarySwatch: Colors.blue,
+        sliderTheme: const SliderThemeData(
+          valueIndicatorColor: Color(0xff000001),
+          overlappingShapeStrokeColor: Color(0xff000002),
+          showValueIndicator: ShowValueIndicator.always,
+        ),
+    );
+    final SliderThemeData sliderTheme = theme.sliderTheme;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return MediaQuery(
+              data: MediaQueryData.fromWindow(window).copyWith(textScaleFactor: 2.0),
+              child: Material(
+                child: Center(
+                  child: Theme(
+                    data: theme,
+                    child: RangeSlider(
+                      values: values,
+                      labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
+                      onChanged: (RangeValues newValues) {
+                        setState(() {
+                          values = newValues;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    final RenderBox sliderBox = tester.firstRenderObject<RenderBox>(find.byType(RangeSlider));
+
+    // Get the bounds of the track by finding the slider edges and translating
+    // inwards by the overlay radius.
+    final Offset topLeft = tester.getTopLeft(find.byType(RangeSlider)).translate(24, 0);
+    final Offset bottomRight = tester.getBottomRight(find.byType(RangeSlider)).translate(-24, 0);
+    final Offset middle = topLeft + bottomRight / 2;
+
+    // Drag the thumbs towards the center.
+    final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
+    await tester.dragFrom(leftTarget, middle - leftTarget);
+    await tester.pumpAndSettle();
+    final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
+    await tester.dragFrom(rightTarget, middle - rightTarget);
+    await tester.pumpAndSettle();
+    expect(values.start, closeTo(0.5, 0.03));
+    expect(values.end, closeTo(0.5, 0.03));
+    final TestGesture gesture = await tester.startGesture(middle);
+    await tester.pumpAndSettle();
 
     expect(
-        find.byType(RangeSlider),
-        paints
-          ..circle()
-          ..circle(color: sliderTheme.overlappingShapeStrokeColor)
-          ..circle()
+      sliderBox,
+      paints
+        ..path(color: sliderTheme.valueIndicatorColor)
+        ..path(color: sliderTheme.overlappingShapeStrokeColor)
+        ..path(color: sliderTheme.valueIndicatorColor),
     );
+
+    await gesture.up();
   });
 
   testWidgets('Range Slider implements debugFillProperties', (WidgetTester tester) async {
@@ -1773,7 +1565,7 @@ void main() {
       'labelStart: "lowerValue"',
       'labelEnd: "upperValue"',
       'activeColor: MaterialColor(primary value: Color(0xff2196f3))',
-      'inactiveColor: MaterialColor(primary value: Color(0xff9e9e9e))',
+      'inactiveColor: MaterialColor(primary value: Color(0xff9e9e9e))'
     ]);
   });
 }

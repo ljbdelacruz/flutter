@@ -26,7 +26,6 @@ class SectionDetail {
   final String imageAssetPackage;
 }
 
-@immutable
 class Section {
   const Section({
     this.title,

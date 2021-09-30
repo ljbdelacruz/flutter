@@ -28,7 +28,5 @@
   "cutButtonLabel": "Vyjmout",
   "copyButtonLabel": "Kopírovat",
   "pasteButtonLabel": "Vložit",
-  "selectAllButtonLabel": "Vybrat vše",
-  "tabSemanticsLabel": "Karta $tabIndex z $tabCount",
-  "modalBarrierDismissLabel": "Zavřít"
+  "selectAllButtonLabel": "Vybrat vše"
 }

@@ -2,22 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/src/foundation/assertions.dart';
 import 'package:flutter/src/painting/basic_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 
-const List<Widget> children = <Widget>[
-  SizedBox(width: 200.0, height: 150.0),
-  SizedBox(width: 200.0, height: 150.0),
-  SizedBox(width: 200.0, height: 150.0),
-  SizedBox(width: 200.0, height: 150.0),
+final List<Widget> children = <Widget>[
+  Container(width: 200.0, height: 150.0),
+  Container(width: 200.0, height: 150.0),
+  Container(width: 200.0, height: 150.0),
+  Container(width: 200.0, height: 150.0),
 ];
 
 void expectRects(WidgetTester tester, List<Rect> expected) {
-  final Finder finder = find.byType(SizedBox);
+  final Finder finder = find.byType(Container);
   finder.precache();
   final List<Rect> actual = <Rect>[];
   for (int i = 0; i < expected.length; ++i) {

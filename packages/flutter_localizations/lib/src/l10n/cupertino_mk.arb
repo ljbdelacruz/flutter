@@ -18,7 +18,5 @@
   "cutButtonLabel": "Исечи",
   "copyButtonLabel": "Копирај",
   "pasteButtonLabel": "Залепи",
-  "selectAllButtonLabel": "Избери ги сите",
-  "tabSemanticsLabel": "Картичка $tabIndex од $tabCount",
-  "modalBarrierDismissLabel": "Отфрли"
+  "selectAllButtonLabel": "Избери ги сите"
 }

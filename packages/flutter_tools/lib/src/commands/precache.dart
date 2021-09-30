@@ -4,36 +4,18 @@
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
-
 import '../base/common.dart';
-import '../base/logger.dart';
-import '../base/platform.dart';
 import '../cache.dart';
 import '../features.dart';
 import '../globals.dart' as globals;
 import '../runner/flutter_command.dart';
-import '../version.dart';
 
-/// The flutter precache command allows downloading of cache artifacts without
-/// the use of device/artifact autodetection.
 class PrecacheCommand extends FlutterCommand {
-  PrecacheCommand({
-    bool verboseHelp = false,
-    @required Cache cache,
-    @required Platform platform,
-    @required Logger logger,
-    @required FeatureFlags featureFlags,
-    FlutterVersion flutterVersion, // flutter version cannot be injected.
-  }) : _cache = cache,
-       _platform = platform,
-       _logger = logger,
-       _featureFlags = featureFlags,
-       _flutterVersion = flutterVersion {
+  PrecacheCommand({bool verboseHelp = false}) {
     argParser.addFlag('all-platforms', abbr: 'a', negatable: false,
         help: 'Precache artifacts for all host platforms.');
     argParser.addFlag('force', abbr: 'f', negatable: false,
-        help: 'Force re-downloading of artifacts.');
+        help: 'Force downloading of artifacts.');
     argParser.addFlag('android', negatable: true, defaultsTo: true,
         help: 'Precache artifacts for Android development.',
         hide: verboseHelp);
@@ -65,12 +47,6 @@ class PrecacheCommand extends FlutterCommand {
     argParser.addFlag('use-unsigned-mac-binaries', negatable: true, defaultsTo: false,
         help: 'Precache the unsigned mac binaries when available.', hide: true);
   }
-
-  final Cache _cache;
-  final Logger _logger;
-  final Platform _platform;
-  final FeatureFlags _featureFlags;
-  final FlutterVersion _flutterVersion;
 
   @override
   final String name = 'precache';
@@ -135,30 +111,22 @@ class PrecacheCommand extends FlutterCommand {
 
   @override
   Future<FlutterCommandResult> runCommand() async {
-    // Re-lock the cache.
-    if (_platform.environment['FLUTTER_ALREADY_LOCKED'] != 'true') {
-      await Cache.lock();
-    }
-    if (boolArg('force')) {
-      _cache.clearStampFiles();
-    }
-
     final bool includeAllPlatforms = boolArg('all-platforms');
     if (includeAllPlatforms) {
-      _cache.includeAllPlatforms = true;
+      globals.cache.includeAllPlatforms = true;
     }
     if (boolArg('use-unsigned-mac-binaries')) {
-      _cache.useUnsignedMacBinaries = true;
+      globals.cache.useUnsignedMacBinaries = true;
     }
-    _cache.platformOverrideArtifacts = _explicitArtifactSelections();
+    globals.cache.platformOverrideArtifacts = _explicitArtifactSelections();
     final Map<String, String> umbrellaForArtifact = _umbrellaForArtifactMap();
     final Set<DevelopmentArtifact> requiredArtifacts = <DevelopmentArtifact>{};
     for (final DevelopmentArtifact artifact in DevelopmentArtifact.values) {
       // Don't include unstable artifacts on stable branches.
-      if (!(_flutterVersion ?? globals.flutterVersion).isMaster && artifact.unstable) {
+      if (!globals.flutterVersion.isMaster && artifact.unstable) {
         continue;
       }
-      if (artifact.feature != null && !_featureFlags.isEnabled(artifact.feature)) {
+      if (artifact.feature != null && !featureFlags.isEnabled(artifact.feature)) {
         continue;
       }
 
@@ -167,10 +135,11 @@ class PrecacheCommand extends FlutterCommand {
         requiredArtifacts.add(artifact);
       }
     }
-    if (!_cache.isUpToDate()) {
-      await _cache.updateAll(requiredArtifacts);
+    final bool forceUpdate = boolArg('force');
+    if (forceUpdate || !globals.cache.isUpToDate()) {
+      await globals.cache.updateAll(requiredArtifacts);
     } else {
-      _logger.printStatus('Already up-to-date.');
+      globals.printStatus('Already up-to-date.');
     }
     return FlutterCommandResult.success();
   }

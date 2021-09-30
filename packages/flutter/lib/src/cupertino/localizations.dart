@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -152,14 +150,6 @@ abstract class CupertinoLocalizations {
   // The global version uses the translated string from the arb file.
   String get alertDialogLabel;
 
-  /// The accessibility label used on a tab in a [CupertinoTabBar].
-  ///
-  /// This message describes the index of the selected tab and how many tabs
-  /// there are, e.g. 'tab, 1 of 2' in United States English.
-  ///
-  /// `tabIndex` and `tabCount` must be greater than or equal to one.
-  String tabSemanticsLabel({int tabIndex, int tabCount});
-
   /// Hour that is shown in [CupertinoTimerPicker] corresponding to
   /// the given hour value.
   ///
@@ -224,13 +214,6 @@ abstract class CupertinoLocalizations {
   // The global version uses the translated string from the arb file.
   String get selectAllButtonLabel;
 
-  /// Label read out by accessibility tools (VoiceOver) for a modal
-  /// barrier to indicate that a tap dismisses the barrier.
-  ///
-  /// A modal barrier can for example be found behind an alert or popup to block
-  /// user interaction with elements behind it.
-  String get modalBarrierDismissLabel;
-
   /// The `CupertinoLocalizations` from the closest [Localizations] instance
   /// that encloses the given context.
   ///
@@ -264,7 +247,7 @@ class _CupertinoLocalizationsDelegate extends LocalizationsDelegate<CupertinoLoc
   String toString() => 'DefaultCupertinoLocalizations.delegate(en_US)';
 }
 
-/// US English strings for the Cupertino widgets.
+/// US English strings for the cupertino widgets.
 class DefaultCupertinoLocalizations implements CupertinoLocalizations {
   /// Constructs an object that defines the cupertino widgets' localized strings
   /// for US English (only).
@@ -366,13 +349,6 @@ class DefaultCupertinoLocalizations implements CupertinoLocalizations {
   String get alertDialogLabel => 'Alert';
 
   @override
-  String tabSemanticsLabel({int tabIndex, int tabCount}) {
-    assert(tabIndex >= 1);
-    assert(tabCount >= 1);
-    return 'Tab $tabIndex of $tabCount';
-  }
-
-  @override
   String timerPickerHour(int hour) => hour.toString();
 
   @override
@@ -401,9 +377,6 @@ class DefaultCupertinoLocalizations implements CupertinoLocalizations {
 
   @override
   String get selectAllButtonLabel => 'Select All';
-
-  @override
-  String get modalBarrierDismissLabel => 'Dismiss';
 
   /// Creates an object that provides US English resource values for the
   /// cupertino library widgets.

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui' as ui show Image, ImageFilter, TextHeightBehavior;
 
 import 'package:flutter/foundation.dart';
@@ -11,7 +9,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-import 'binding.dart';
 import 'debug.dart';
 import 'framework.dart';
 import 'localizations.dart';
@@ -43,8 +40,8 @@ export 'package:flutter/rendering.dart' show
   LayerLink,
   MainAxisAlignment,
   MainAxisSize,
-  Overflow,
   MultiChildLayoutDelegate,
+  Overflow,
   PaintingContext,
   PointerCancelEvent,
   PointerCancelEventListener,
@@ -1413,11 +1410,9 @@ class FittedBox extends SingleChildRenderObjectWidget {
     Key key,
     this.fit = BoxFit.contain,
     this.alignment = Alignment.center,
-    this.clipBehavior = Clip.hardEdge,
     Widget child,
   }) : assert(fit != null),
        assert(alignment != null),
-       assert(clipBehavior != null),
        super(key: key, child: child);
 
   /// How to inscribe the child into the space allocated during layout.
@@ -1439,19 +1434,12 @@ class FittedBox extends SingleChildRenderObjectWidget {
   ///    relative to text direction.
   final AlignmentGeometry alignment;
 
-  // TODO(liyuqian): defaults to [Clip.none] once Google references are updated.
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.hardEdge].
-  final Clip clipBehavior;
-
   @override
   RenderFittedBox createRenderObject(BuildContext context) {
     return RenderFittedBox(
       fit: fit,
       alignment: alignment,
       textDirection: Directionality.of(context),
-      clipBehavior: clipBehavior,
     );
   }
 
@@ -1460,8 +1448,7 @@ class FittedBox extends SingleChildRenderObjectWidget {
     renderObject
       ..fit = fit
       ..alignment = alignment
-      ..textDirection = Directionality.of(context)
-      ..clipBehavior = clipBehavior;
+      ..textDirection = Directionality.of(context);
   }
 
   @override
@@ -2243,9 +2230,7 @@ class UnconstrainedBox extends SingleChildRenderObjectWidget {
     this.textDirection,
     this.alignment = Alignment.center,
     this.constrainedAxis,
-    this.clipBehavior = Clip.hardEdge,
   }) : assert(alignment != null),
-       assert(clipBehavior != null),
        super(key: key, child: child);
 
   /// The text direction to use when interpreting the [alignment] if it is an
@@ -2271,19 +2256,12 @@ class UnconstrainedBox extends SingleChildRenderObjectWidget {
   /// will be retained.
   final Axis constrainedAxis;
 
-  // TODO(liyuqian): defaults to [Clip.none] once Google references are updated.
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.hardEdge].
-  final Clip clipBehavior;
-
   @override
   void updateRenderObject(BuildContext context, covariant RenderUnconstrainedBox renderObject) {
     renderObject
       ..textDirection = textDirection ?? Directionality.of(context)
       ..alignment = alignment
-      ..constrainedAxis = constrainedAxis
-      ..clipBehavior = clipBehavior;
+      ..constrainedAxis = constrainedAxis;
   }
 
   @override
@@ -2291,7 +2269,6 @@ class UnconstrainedBox extends SingleChildRenderObjectWidget {
     textDirection: textDirection ?? Directionality.of(context),
     alignment: alignment,
     constrainedAxis: constrainedAxis,
-    clipBehavior: clipBehavior,
   );
 
   @override
@@ -2754,14 +2731,12 @@ class _OffstageElement extends SingleChildRenderObjectElement {
 class AspectRatio extends SingleChildRenderObjectWidget {
   /// Creates a widget with a specific aspect ratio.
   ///
-  /// The [aspectRatio] argument must be a finite number greater than zero.
+  /// The [aspectRatio] argument must not be null.
   const AspectRatio({
     Key key,
     @required this.aspectRatio,
     Widget child,
   }) : assert(aspectRatio != null),
-       assert(aspectRatio > 0.0),
-       // can't test isFinite because that's not a constant expression
        super(key: key, child: child);
 
   /// The aspect ratio to attempt to use.
@@ -3238,10 +3213,8 @@ class Stack extends MultiChildRenderObjectWidget {
     this.textDirection,
     this.fit = StackFit.loose,
     this.overflow = Overflow.clip,
-    this.clipBehavior = Clip.hardEdge,
     List<Widget> children = const <Widget>[],
-  }) : assert(clipBehavior != null),
-       super(key: key, children: children);
+  }) : super(key: key, children: children);
 
   /// How to align the non-positioned and partially-positioned children in the
   /// stack.
@@ -3278,56 +3251,29 @@ class Stack extends MultiChildRenderObjectWidget {
   /// ([StackFit.expand]).
   final StackFit fit;
 
-  // TODO(liyuqian): Deprecate and remove [overflow] once its usages are removed from Google.
-
   /// Whether overflowing children should be clipped. See [Overflow].
   ///
   /// Some children in a stack might overflow its box. When this flag is set to
   /// [Overflow.clip], children cannot paint outside of the stack's box.
-  ///
-  /// When set to [Overflow.visible], the visible overflow area will not accept
-  /// hit testing.
-  ///
-  /// This overrides [clipBehavior] for now due to a staged roll out without
-  /// breaking Google. We will remove it and only use [clipBehavior] soon.
   final Overflow overflow;
-
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.hardEdge].
-  final Clip clipBehavior;
-
-  bool _debugCheckHasDirectionality(BuildContext context) {
-    if (alignment is AlignmentDirectional && textDirection == null) {
-      assert(debugCheckHasDirectionality(
-        context,
-        why: 'to resolve the \'alignment\' argument',
-        hint: alignment == AlignmentDirectional.topStart ? 'The default value for \'alignment\' is AlignmentDirectional.topStart, which requires a text direction.' : null,
-        alternative: 'Instead of providing a Directionality widget, another solution would be passing a non-directional \'alignment\', or an explicit \'textDirection\', to the $runtimeType.'),
-      );
-    }
-    return true;
-  }
 
   @override
   RenderStack createRenderObject(BuildContext context) {
-    assert(_debugCheckHasDirectionality(context));
     return RenderStack(
       alignment: alignment,
       textDirection: textDirection ?? Directionality.of(context),
       fit: fit,
-      clipBehavior: overflow == Overflow.visible ? Clip.none : clipBehavior,
+      overflow: overflow,
     );
   }
 
   @override
   void updateRenderObject(BuildContext context, RenderStack renderObject) {
-    assert(_debugCheckHasDirectionality(context));
     renderObject
       ..alignment = alignment
       ..textDirection = textDirection ?? Directionality.of(context)
       ..fit = fit
-      ..clipBehavior = overflow == Overflow.visible ? Clip.none : clipBehavior;
+      ..overflow = overflow;
   }
 
   @override
@@ -3336,7 +3282,7 @@ class Stack extends MultiChildRenderObjectWidget {
     properties.add(DiagnosticsProperty<AlignmentGeometry>('alignment', alignment));
     properties.add(EnumProperty<TextDirection>('textDirection', textDirection, defaultValue: null));
     properties.add(EnumProperty<StackFit>('fit', fit));
-    properties.add(EnumProperty<Clip>('clipBehavior', clipBehavior, defaultValue: Clip.hardEdge));
+    properties.add(EnumProperty<Overflow>('overflow', overflow));
   }
 }
 
@@ -3371,7 +3317,6 @@ class IndexedStack extends Stack {
 
   @override
   RenderIndexedStack createRenderObject(BuildContext context) {
-    assert(_debugCheckHasDirectionality(context));
     return RenderIndexedStack(
       index: index,
       alignment: alignment,
@@ -3381,7 +3326,6 @@ class IndexedStack extends Stack {
 
   @override
   void updateRenderObject(BuildContext context, RenderIndexedStack renderObject) {
-    assert(_debugCheckHasDirectionality(context));
     renderObject
       ..index = index
       ..alignment = alignment
@@ -3838,7 +3782,7 @@ class PositionedDirectional extends StatelessWidget {
 ///  * [Column], for a version of this widget that is always vertical.
 ///  * [Expanded], to indicate children that should take all the remaining room.
 ///  * [Flexible], to indicate children that should share the remaining room.
-///  * [Spacer], a widget that takes up space proportional to its flex value.
+///  * [Spacer], a widget that takes up space proportional to it's flex value.
 ///    that may be sized smaller (leaving some remaining room unused).
 ///  * The [catalog of layout widgets](https://flutter.dev/widgets/layout/).
 class Flex extends MultiChildRenderObjectWidget {
@@ -3864,7 +3808,6 @@ class Flex extends MultiChildRenderObjectWidget {
     this.textDirection,
     this.verticalDirection = VerticalDirection.down,
     this.textBaseline,
-    this.clipBehavior = Clip.hardEdge,
     List<Widget> children = const <Widget>[],
   }) : assert(direction != null),
        assert(mainAxisAlignment != null),
@@ -3872,7 +3815,6 @@ class Flex extends MultiChildRenderObjectWidget {
        assert(crossAxisAlignment != null),
        assert(verticalDirection != null),
        assert(crossAxisAlignment != CrossAxisAlignment.baseline || textBaseline != null),
-       assert(clipBehavior != null),
        super(key: key, children: children);
 
   /// The direction to use as the main axis.
@@ -3957,12 +3899,6 @@ class Flex extends MultiChildRenderObjectWidget {
   /// If aligning items according to their baseline, which baseline to use.
   final TextBaseline textBaseline;
 
-  // TODO(liyuqian): defaults to [Clip.none] once Google references are updated.
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.hardEdge].
-  final Clip clipBehavior;
-
   bool get _needTextDirection {
     assert(direction != null);
     switch (direction) {
@@ -4006,7 +3942,6 @@ class Flex extends MultiChildRenderObjectWidget {
       textDirection: getEffectiveTextDirection(context),
       verticalDirection: verticalDirection,
       textBaseline: textBaseline,
-      clipBehavior: clipBehavior,
     );
   }
 
@@ -4019,8 +3954,7 @@ class Flex extends MultiChildRenderObjectWidget {
       ..crossAxisAlignment = crossAxisAlignment
       ..textDirection = getEffectiveTextDirection(context)
       ..verticalDirection = verticalDirection
-      ..textBaseline = textBaseline
-      ..clipBehavior = clipBehavior;
+      ..textBaseline = textBaseline;
   }
 
   @override
@@ -4188,7 +4122,7 @@ class Flex extends MultiChildRenderObjectWidget {
 ///  * [Expanded], to indicate children that should take all the remaining room.
 ///  * [Flexible], to indicate children that should share the remaining room but
 ///    that may by sized smaller (leaving some remaining room unused).
-///  * [Spacer], a widget that takes up space proportional to its flex value.
+///  * [Spacer], a widget that takes up space proportional to it's flex value.
 ///  * The [catalog of layout widgets](https://flutter.dev/widgets/layout/).
 class Row extends Flex {
   /// Creates a horizontal array of children.
@@ -4390,7 +4324,7 @@ class Row extends Flex {
 ///    that may size smaller (leaving some remaining room unused).
 ///  * [SingleChildScrollView], whose documentation discusses some ways to
 ///    use a [Column] inside a scrolling container.
-///  * [Spacer], a widget that takes up space proportional to its flex value.
+///  * [Spacer], a widget that takes up space proportional to it's flex value.
 ///  * The [catalog of layout widgets](https://flutter.dev/widgets/layout/).
 class Column extends Flex {
   /// Creates a vertical array of children.
@@ -4523,7 +4457,7 @@ class Flexible extends ParentDataWidget<FlexParentData> {
 ///
 /// {@tool dartpad --template=stateless_widget_material}
 /// This example shows how to use an [Expanded] widget in a [Column] so that
-/// its middle child, a [Container] here, expands to fill the space.
+/// it's middle child, a [Container] here, expands to fill the space.
 ///
 /// ![This results in two thin blue boxes with a larger amber box in between.](https://flutter.github.io/assets-for-api-docs/assets/widgets/expanded_column.png)
 ///
@@ -4605,7 +4539,7 @@ class Flexible extends ParentDataWidget<FlexParentData> {
 /// See also:
 ///
 ///  * [Flexible], which does not force the child to fill the available space.
-///  * [Spacer], a widget that takes up space proportional to its flex value.
+///  * [Spacer], a widget that takes up space proportional to it's flex value.
 ///  * The [catalog of layout widgets](https://flutter.dev/widgets/layout/).
 class Expanded extends Flexible {
   /// Creates a widget that expands a child of a [Row], [Column], or [Flex]
@@ -4691,9 +4625,8 @@ class Wrap extends MultiChildRenderObjectWidget {
     this.crossAxisAlignment = WrapCrossAlignment.start,
     this.textDirection,
     this.verticalDirection = VerticalDirection.down,
-    this.clipBehavior = Clip.hardEdge,
     List<Widget> children = const <Widget>[],
-  }) : assert(clipBehavior != null), super(key: key, children: children);
+  }) : super(key: key, children: children);
 
   /// The direction to use as the main axis.
   ///
@@ -4827,12 +4760,6 @@ class Wrap extends MultiChildRenderObjectWidget {
   /// [verticalDirection] must not be null.
   final VerticalDirection verticalDirection;
 
-  // TODO(liyuqian): defaults to [Clip.none] once Google references are updated.
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.hardEdge].
-  final Clip clipBehavior;
-
   @override
   RenderWrap createRenderObject(BuildContext context) {
     return RenderWrap(
@@ -4844,7 +4771,6 @@ class Wrap extends MultiChildRenderObjectWidget {
       crossAxisAlignment: crossAxisAlignment,
       textDirection: textDirection ?? Directionality.of(context),
       verticalDirection: verticalDirection,
-      clipBehavior: clipBehavior,
     );
   }
 
@@ -4858,8 +4784,7 @@ class Wrap extends MultiChildRenderObjectWidget {
       ..runSpacing = runSpacing
       ..crossAxisAlignment = crossAxisAlignment
       ..textDirection = textDirection ?? Directionality.of(context)
-      ..verticalDirection = verticalDirection
-      ..clipBehavior = clipBehavior;
+      ..verticalDirection = verticalDirection;
   }
 
   @override
@@ -5147,13 +5072,6 @@ class RichText extends MultiChildRenderObjectWidget {
     this.strutStyle,
     this.textWidthBasis = TextWidthBasis.parent,
     this.textHeightBehavior,
-    @Deprecated(
-      'This parameter is a temporary flag to migrate the internal tests and '
-      'should not be used in other contexts. For more details, see '
-      'https://github.com/flutter/flutter/issues/59316. '
-      'This feature was deprecated after v1.19.0.'
-    )
-    bool applyTextScaleFactorToWidgetSpan = false,
   }) : assert(text != null),
        assert(textAlign != null),
        assert(softWrap != null),
@@ -5161,7 +5079,6 @@ class RichText extends MultiChildRenderObjectWidget {
        assert(textScaleFactor != null),
        assert(maxLines == null || maxLines > 0),
        assert(textWidthBasis != null),
-       _applyTextScaleFactorToWidgetSpan = applyTextScaleFactorToWidgetSpan,
        super(key: key, children: _extractChildren(text));
 
   // Traverses the InlineSpan tree and depth-first collects the list of
@@ -5239,8 +5156,6 @@ class RichText extends MultiChildRenderObjectWidget {
   /// {@macro flutter.dart:ui.textHeightBehavior}
   final ui.TextHeightBehavior textHeightBehavior;
 
-  final bool _applyTextScaleFactorToWidgetSpan;
-
   @override
   RenderParagraph createRenderObject(BuildContext context) {
     assert(textDirection != null || debugCheckHasDirectionality(context));
@@ -5254,7 +5169,6 @@ class RichText extends MultiChildRenderObjectWidget {
       strutStyle: strutStyle,
       textWidthBasis: textWidthBasis,
       textHeightBehavior: textHeightBehavior,
-      applyTextScaleFactorToWidgetSpan: _applyTextScaleFactorToWidgetSpan,
       locale: locale ?? Localizations.localeOf(context, nullOk: true),
     );
   }
@@ -5304,7 +5218,6 @@ class RawImage extends LeafRenderObjectWidget {
   const RawImage({
     Key key,
     this.image,
-    this.debugImageLabel,
     this.width,
     this.height,
     this.scale = 1.0,
@@ -5317,19 +5230,14 @@ class RawImage extends LeafRenderObjectWidget {
     this.matchTextDirection = false,
     this.invertColors = false,
     this.filterQuality = FilterQuality.low,
-    this.isAntiAlias = false,
   }) : assert(scale != null),
        assert(alignment != null),
        assert(repeat != null),
        assert(matchTextDirection != null),
-       assert(isAntiAlias != null),
        super(key: key);
 
   /// The image to display.
   final ui.Image image;
-
-  /// A string identifying the source of the image.
-  final String debugImageLabel;
 
   /// If non-null, require the image to have this width.
   ///
@@ -5440,17 +5348,11 @@ class RawImage extends LeafRenderObjectWidget {
   ///  * [Paint.invertColors], for the dart:ui implementation.
   final bool invertColors;
 
-  /// Whether to paint the image with anti-aliasing.
-  ///
-  /// Anti-aliasing alleviates the sawtooth artifact when the image is rotated.
-  final bool isAntiAlias;
-
   @override
   RenderImage createRenderObject(BuildContext context) {
     assert((!matchTextDirection && alignment is Alignment) || debugCheckHasDirectionality(context));
     return RenderImage(
       image: image,
-      debugImageLabel: debugImageLabel,
       width: width,
       height: height,
       scale: scale,
@@ -5464,7 +5366,6 @@ class RawImage extends LeafRenderObjectWidget {
       textDirection: matchTextDirection || alignment is! Alignment ? Directionality.of(context) : null,
       invertColors: invertColors,
       filterQuality: filterQuality,
-      isAntiAlias: isAntiAlias,
     );
   }
 
@@ -5472,7 +5373,6 @@ class RawImage extends LeafRenderObjectWidget {
   void updateRenderObject(BuildContext context, RenderImage renderObject) {
     renderObject
       ..image = image
-      ..debugImageLabel = debugImageLabel
       ..width = width
       ..height = height
       ..scale = scale
@@ -5729,17 +5629,17 @@ class Listener extends StatelessWidget {
       'Use MouseRegion.onEnter instead. See MouseRegion.opaque for behavioral difference. '
       'This feature was deprecated after v1.10.14.'
     )
-    this.onPointerEnter,
+    this.onPointerEnter, // ignore: deprecated_member_use_from_same_package
     @Deprecated(
       'Use MouseRegion.onExit instead. See MouseRegion.opaque for behavioral difference. '
       'This feature was deprecated after v1.10.14.'
     )
-    this.onPointerExit,
+    this.onPointerExit, // ignore: deprecated_member_use_from_same_package
     @Deprecated(
       'Use MouseRegion.onHover instead. See MouseRegion.opaque for behavioral difference. '
       'This feature was deprecated after v1.10.14.'
     )
-    this.onPointerHover,
+    this.onPointerHover, // ignore: deprecated_member_use_from_same_package
     this.onPointerUp,
     this.onPointerCancel,
     this.onPointerSignal,
@@ -5970,22 +5870,17 @@ class _PointerListener extends SingleChildRenderObjectWidget {
 ///    have buttons pressed.
 class MouseRegion extends StatefulWidget {
   /// Creates a widget that forwards mouse events to callbacks.
-  ///
-  /// By default, all callbacks are empty, [cursor] is [MouseCursor.defer], and
-  /// [opaque] is true. The [cursor] must not be null.
   const MouseRegion({
     Key key,
     this.onEnter,
     this.onExit,
     this.onHover,
-    this.cursor = MouseCursor.defer,
     this.opaque = true,
     this.child,
-  }) : assert(cursor != null),
-       assert(opaque != null),
+  }) : assert(opaque != null),
        super(key: key);
 
-  /// Triggered when a mouse pointer has entered this widget.
+  /// Called when a mouse pointer has entered this widget.
   ///
   /// This callback is triggered when the pointer, with or without buttons
   /// pressed, has started to be contained by the region of this widget. More
@@ -6013,16 +5908,16 @@ class MouseRegion extends StatefulWidget {
   ///    internally implemented.
   final PointerEnterEventListener onEnter;
 
-  /// Triggered when a mouse pointer has moved onto or within the widget without
-  /// buttons pressed.
+  /// Called when a mouse pointer moves within this widget without buttons
+  /// pressed.
   ///
-  /// This callback is not triggered by the movement of an annotation.
+  /// This callback is not triggered when the [MouseRegion] has moved
+  /// while being hovered by the mouse pointer.
   ///
-  /// The time that this callback is triggered is during the callback of a
-  /// pointer event, which is always between frames.
+  /// {@macro flutter.mouseRegion.triggerTime}
   final PointerHoverEventListener onHover;
 
-  /// Triggered when a mouse pointer has exited this widget when the widget is
+  /// Called when a mouse pointer has exited this widget when the widget is
   /// still mounted.
   ///
   /// This callback is triggered when the pointer, with or without buttons
@@ -6092,7 +5987,7 @@ class MouseRegion extends StatefulWidget {
   ///
   /// {@tool dartpad --template=stateful_widget_scaffold_center}
   /// The following example shows a widget that hides its content one second
-  /// after being hovered, and also exposes the enter and exit callbacks.
+  /// after behing hovered, and also exposes the enter and exit callbacks.
   /// Because the widget conditionally creates the `MouseRegion`, and leaks the
   /// hover state, it needs to take the restriction into consideration. In this
   /// case, since it has access to the event that triggers the disappearance of
@@ -6191,21 +6086,9 @@ class MouseRegion extends StatefulWidget {
   ///    this callback is internally implemented, but without the restriction.
   final PointerExitEventListener onExit;
 
-  /// The mouse cursor for mouse pointers that are hovering over the region.
-  ///
-  /// When a mouse enters the region, its cursor will be changed to the [cursor].
-  /// When the mouse leaves the region, the cursor will be decided by the region
-  /// found at the new location.
-  ///
-  /// The [cursor] defaults to [MouseCursor.defer], deferring the choice of
-  /// cursor to the next region behind it in hit-test order.
-  final MouseCursor cursor;
-
   /// Whether this widget should prevent other [MouseRegion]s visually behind it
-  /// from detecting the pointer.
-  ///
-  /// This changes the list of regions that a pointer hovers, thus affecting how
-  /// their [onHover], [onEnter], [onExit], and [cursor] behave.
+  /// from detecting the pointer, thus affecting how their [onHover], [onEnter],
+  /// and [onExit] behave.
   ///
   /// If [opaque] is true, this widget will absorb the mouse pointer and
   /// prevent this widget's siblings (or any other widgets that are not
@@ -6238,7 +6121,6 @@ class MouseRegion extends StatefulWidget {
     if (onHover != null)
       listeners.add('hover');
     properties.add(IterableProperty<String>('listeners', listeners, ifEmpty: '<none>'));
-    properties.add(DiagnosticsProperty<MouseCursor>('cursor', cursor, defaultValue: null));
     properties.add(DiagnosticsProperty<bool>('opaque', opaque, defaultValue: true));
   }
 }
@@ -6271,7 +6153,6 @@ class _RawMouseRegion extends SingleChildRenderObjectWidget {
       onEnter: widget.onEnter,
       onHover: widget.onHover,
       onExit: owner.getHandleExit(),
-      cursor: widget.cursor,
       opaque: widget.opaque,
     );
   }
@@ -6283,7 +6164,6 @@ class _RawMouseRegion extends SingleChildRenderObjectWidget {
       ..onEnter = widget.onEnter
       ..onHover = widget.onHover
       ..onExit = owner.getHandleExit()
-      ..cursor = widget.cursor
       ..opaque = widget.opaque;
   }
 }

@@ -18,7 +18,5 @@
   "cutButtonLabel": "Kivágás",
   "copyButtonLabel": "Másolás",
   "pasteButtonLabel": "Beillesztés",
-  "selectAllButtonLabel": "Összes kijelölése",
-  "tabSemanticsLabel": "$tabCount/$tabIndex. lap",
-  "modalBarrierDismissLabel": "Elvetés"
+  "selectAllButtonLabel": "Összes kijelölése"
 }

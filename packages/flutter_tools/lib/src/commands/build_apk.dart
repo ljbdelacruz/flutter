@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import '../android/android_builder.dart';
-import '../android/build_validation.dart';
+import '../android/android_sdk.dart';
 import '../android/gradle_utils.dart';
 import '../base/terminal.dart';
 import '../build_info.dart';
@@ -30,10 +30,6 @@ class BuildApkCommand extends BuildSubCommand {
     addDartObfuscationOption();
     usesDartDefineOption();
     usesExtraFrontendOptions();
-    addBundleSkSLPathOption(hide: !verboseHelp);
-    addEnableExperimentation(hide: !verboseHelp);
-    addBuildPerformanceFile(hide: !verboseHelp);
-    addNullSafetyModeOptions(hide: !verboseHelp);
     argParser
       ..addFlag('split-per-abi',
         negatable: false,
@@ -87,7 +83,7 @@ class BuildApkCommand extends BuildSubCommand {
 
   @override
   Future<FlutterCommandResult> runCommand() async {
-    if (globals.androidSdk == null) {
+    if (androidSdk == null) {
       exitWithNoSdkMessage();
     }
     final BuildInfo buildInfo = getBuildInfo();
@@ -97,7 +93,6 @@ class BuildApkCommand extends BuildSubCommand {
       targetArchs: stringsArg('target-platform').map<AndroidArch>(getAndroidArchForName),
       shrink: boolArg('shrink'),
     );
-    validateBuild(androidBuildInfo);
 
     if (buildInfo.isRelease && !androidBuildInfo.splitPerAbi && androidBuildInfo.targetArchs.length > 1) {
       final String targetPlatforms = stringsArg('target-platform').join(', ');

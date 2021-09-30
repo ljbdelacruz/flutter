@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -34,14 +32,13 @@ import 'edge_insets.dart';
 ///    however its straight sides change into a rounded corner with a circular
 ///    radius in a step function instead of gradually like the
 ///    [ContinuousRectangleBorder].
-class ContinuousRectangleBorder extends OutlinedBorder {
+class ContinuousRectangleBorder extends ShapeBorder {
   /// The arguments must not be null.
   const ContinuousRectangleBorder({
-    BorderSide side = BorderSide.none,
+    this.side = BorderSide.none,
     this.borderRadius = BorderRadius.zero,
   }) : assert(side != null),
-       assert(borderRadius != null),
-       super(side: side);
+       assert(borderRadius != null);
 
   /// The radius for each corner.
   ///
@@ -49,7 +46,10 @@ class ContinuousRectangleBorder extends OutlinedBorder {
   /// [getOuterPath].
   final BorderRadiusGeometry borderRadius;
 
-   @override
+  /// The style of this border.
+  final BorderSide side;
+
+  @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
 
   @override
@@ -132,14 +132,6 @@ class ContinuousRectangleBorder extends OutlinedBorder {
   @override
   Path getOuterPath(Rect rect, { TextDirection textDirection }) {
     return _getPath(borderRadius.resolve(textDirection).toRRect(rect));
-  }
-
-  @override
-  ContinuousRectangleBorder copyWith({ BorderSide side, BorderRadius borderRadius }) {
-    return ContinuousRectangleBorder(
-      side: side ?? this.side,
-      borderRadius: borderRadius ?? this.borderRadius,
-    );
   }
 
   @override

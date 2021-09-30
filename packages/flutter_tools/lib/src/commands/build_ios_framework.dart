@@ -6,23 +6,22 @@ import 'dart:async';
 
 import 'package:file/file.dart';
 import 'package:meta/meta.dart';
+import 'package:platform/platform.dart';
 
+import '../aot.dart';
 import '../artifacts.dart';
 import '../base/common.dart';
 import '../base/file_system.dart';
 import '../base/logger.dart';
-import '../base/platform.dart';
 import '../base/process.dart';
 import '../base/utils.dart';
 import '../build_info.dart';
-import '../build_system/build_system.dart';
-import '../build_system/targets/common.dart';
-import '../build_system/targets/icon_tree_shaker.dart';
 import '../build_system/targets/ios.dart';
+import '../bundle.dart';
 import '../cache.dart';
-import '../convert.dart';
 import '../globals.dart' as globals;
 import '../macos/cocoapod_utils.dart';
+import '../macos/xcode.dart';
 import '../plugins.dart';
 import '../project.dart';
 import '../runner/flutter_command.dart' show DevelopmentArtifact, FlutterCommandResult;
@@ -36,12 +35,13 @@ import 'build.dart';
 class BuildIOSFrameworkCommand extends BuildSubCommand {
   BuildIOSFrameworkCommand({
     FlutterVersion flutterVersion, // Instantiating FlutterVersion kicks off networking, so delay until it's needed, but allow test injection.
-    @required BuildSystem buildSystem,
-    @required bool verboseHelp,
+    @required AotBuilder aotBuilder,
+    @required BundleBuilder bundleBuilder,
     Cache cache,
     Platform platform
   }) : _flutterVersion = flutterVersion,
-       _buildSystem = buildSystem,
+       _aotBuilder = aotBuilder,
+       _bundleBuilder = bundleBuilder,
        _injectedCache = cache,
        _injectedPlatform = platform {
     addTreeShakeIconsFlag();
@@ -52,9 +52,6 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
     addSplitDebugInfoOption();
     addDartObfuscationOption();
     usesExtraFrontendOptions();
-    addNullSafetyModeOptions(hide: !verboseHelp);
-    addEnableExperimentation(hide: !verboseHelp);
-
     argParser
       ..addFlag('debug',
         negatable: true,
@@ -98,8 +95,8 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
       );
   }
 
-  final BuildSystem _buildSystem;
-  BuildSystem get buildSystem => _buildSystem ?? globals.buildSystem;
+  final AotBuilder _aotBuilder;
+  final BundleBuilder _bundleBuilder;
 
   Cache get _cache => _injectedCache ?? globals.cache;
   final Cache _injectedCache;
@@ -125,19 +122,19 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
   FlutterProject _project;
 
   List<BuildInfo> get buildInfos {
-    final List<BuildInfo> buildInfos = <BuildInfo>[];
+    final List<BuildInfo> buildModes = <BuildInfo>[];
 
     if (boolArg('debug')) {
-      buildInfos.add(getBuildInfo(forcedBuildMode: BuildMode.debug));
+      buildModes.add(BuildInfo.debug);
     }
     if (boolArg('profile')) {
-      buildInfos.add(getBuildInfo(forcedBuildMode: BuildMode.profile));
+      buildModes.add(BuildInfo.profile);
     }
     if (boolArg('release')) {
-      buildInfos.add(getBuildInfo(forcedBuildMode: BuildMode.release));
+      buildModes.add(BuildInfo.release);
     }
 
-    return buildInfos;
+    return buildModes;
   }
 
   @override
@@ -165,6 +162,8 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
 
   @override
   Future<FlutterCommandResult> runCommand() async {
+    Cache.releaseLockEarly();
+
     final String outputArgument = stringArg('output')
         ?? globals.fs.path.join(globals.fs.currentDirectory.path, 'build', 'ios', 'framework');
 
@@ -178,8 +177,8 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
 
     final Directory outputDirectory = globals.fs.directory(globals.fs.path.absolute(globals.fs.path.normalize(outputArgument)));
 
+    final String productBundleIdentifier = await _project.ios.productBundleIdentifier;
     for (final BuildInfo buildInfo in buildInfos) {
-      final String productBundleIdentifier = await _project.ios.productBundleIdentifier(buildInfo);
       globals.printStatus('Building frameworks for $productBundleIdentifier in ${getNameForBuildMode(buildInfo.mode)} mode...');
       final String xcodeBuildConfiguration = toTitleCase(getNameForBuildMode(buildInfo.mode));
       final Directory modeDirectory = outputDirectory.childDirectory(xcodeBuildConfiguration);
@@ -187,6 +186,8 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
       if (modeDirectory.existsSync()) {
         modeDirectory.deleteSync(recursive: true);
       }
+      final Directory iPhoneBuildOutput = modeDirectory.childDirectory('iphoneos');
+      final Directory simulatorBuildOutput = modeDirectory.childDirectory('iphonesimulator');
 
       if (boolArg('cocoapods')) {
         // FlutterVersion.instance kicks off git processing which can sometimes fail, so don't try it until needed.
@@ -198,12 +199,10 @@ class BuildIOSFrameworkCommand extends BuildSubCommand {
       }
 
       // Build aot, create module.framework and copy.
-      await _produceAppFramework(buildInfo, modeDirectory);
+      await _produceAppFramework(buildInfo, iPhoneBuildOutput, simulatorBuildOutput, modeDirectory);
 
       // Build and copy plugins.
       await processPodsIfNeeded(_project.ios, getIosBuildDirectory(), buildInfo.mode);
-      final Directory iPhoneBuildOutput = modeDirectory.childDirectory('iphoneos');
-      final Directory simulatorBuildOutput = modeDirectory.childDirectory('iphonesimulator');
       if (hasPlugins(_project)) {
         await _producePlugins(buildInfo.mode, xcodeBuildConfiguration, iPhoneBuildOutput, simulatorBuildOutput, modeDirectory, outputDirectory);
       }
@@ -344,64 +343,105 @@ end
     await _produceXCFramework(buildInfo, fatFlutterFrameworkCopy);
   }
 
-  Future<void> _produceAppFramework(BuildInfo buildInfo, Directory modeDirectory) async {
+  Future<void> _produceAppFramework(BuildInfo buildInfo, Directory iPhoneBuildOutput, Directory simulatorBuildOutput, Directory modeDirectory) async {
     const String appFrameworkName = 'App.framework';
+    final Directory destinationAppFrameworkDirectory = modeDirectory.childDirectory(appFrameworkName);
+
+    if (buildInfo.mode == BuildMode.debug) {
+      final Status status = globals.logger.startProgress(' ├─Adding placeholder App.framework for debug...', timeout: timeoutConfiguration.fastOperation);
+      try {
+        destinationAppFrameworkDirectory.createSync(recursive: true);
+        await _produceStubAppFrameworkIfNeeded(buildInfo, iPhoneBuildOutput, simulatorBuildOutput, destinationAppFrameworkDirectory);
+      } finally {
+        status.stop();
+      }
+    } else {
+      await _produceAotAppFrameworkIfNeeded(buildInfo, modeDirectory);
+    }
+
+    final File sourceInfoPlist = _project.ios.hostAppRoot.childDirectory('Flutter').childFile('AppFrameworkInfo.plist');
+    final File destinationInfoPlist = destinationAppFrameworkDirectory.childFile('Info.plist')..createSync(recursive: true);
+
+    destinationInfoPlist.writeAsBytesSync(sourceInfoPlist.readAsBytesSync());
 
     final Status status = globals.logger.startProgress(
-      ' ├─Building App.framework...',
-      timeout: timeoutConfiguration.slowOperation,
-    );
+      ' ├─Assembling Flutter resources for App.framework...', timeout: timeoutConfiguration.slowOperation);
     try {
-      Target target;
-      if (buildInfo.isDebug) {
-        target = const DebugIosApplicationBundle();
-      } else if (buildInfo.isProfile) {
-        target = const ProfileIosApplicationBundle();
-      } else {
-        target = const ReleaseIosApplicationBundle();
-      }
-
-      final Environment environment = Environment(
-        projectDir: globals.fs.currentDirectory,
-        outputDir: modeDirectory,
-        buildDir: _project.dartTool.childDirectory('flutter_build'),
-        cacheDir: null,
-        flutterRootDir: globals.fs.directory(Cache.flutterRoot),
-        defines: <String, String>{
-          kTargetFile: targetFile,
-          kBuildMode: getNameForBuildMode(buildInfo.mode),
-          kTargetPlatform: getNameForTargetPlatform(TargetPlatform.ios),
-          kIconTreeShakerFlag: buildInfo.treeShakeIcons.toString(),
-          kDartDefines: jsonEncode(buildInfo.dartDefines),
-          kBitcodeFlag: 'true',
-          if (buildInfo?.extraGenSnapshotOptions?.isNotEmpty ?? false)
-            kExtraGenSnapshotOptions: buildInfo.extraGenSnapshotOptions.join(','),
-          if (buildInfo?.extraFrontEndOptions?.isNotEmpty ?? false)
-            kExtraFrontEndOptions: buildInfo.extraFrontEndOptions.join(','),
-          kIosArchs: <DarwinArch>[DarwinArch.armv7, DarwinArch.arm64]
-            .map(getNameForDarwinArch).join(' '),
-        },
-        artifacts: globals.artifacts,
-        fileSystem: globals.fs,
-        logger: globals.logger,
-        processManager: globals.processManager,
-        engineVersion: globals.artifacts.isLocalEngine
-          ? null
-          : globals.flutterVersion.engineRevision,
+      await _bundleBuilder.build(
+        platform: TargetPlatform.ios,
+        buildInfo: buildInfo,
+        // Relative paths show noise in the compiler https://github.com/dart-lang/sdk/issues/37978.
+        mainPath: globals.fs.path.absolute(targetFile),
+        assetDirPath: destinationAppFrameworkDirectory.childDirectory('flutter_assets').path,
+        precompiledSnapshot: buildInfo.mode != BuildMode.debug,
+        treeShakeIcons: boolArg('tree-shake-icons')
       );
-      final BuildResult result = await buildSystem.build(target, environment);
-      if (!result.success) {
-        for (final ExceptionMeasurement measurement in result.exceptions.values) {
-          globals.printError(measurement.exception.toString());
-        }
-        throwToolExit('The App.framework build failed.');
-      }
     } finally {
       status.stop();
     }
-
-    final Directory destinationAppFrameworkDirectory = modeDirectory.childDirectory(appFrameworkName);
     await _produceXCFramework(buildInfo, destinationAppFrameworkDirectory);
+  }
+
+  Future<void> _produceStubAppFrameworkIfNeeded(BuildInfo buildInfo, Directory iPhoneBuildOutput, Directory simulatorBuildOutput, Directory destinationAppFrameworkDirectory) async {
+    if (buildInfo.mode != BuildMode.debug) {
+      return;
+    }
+    const String appFrameworkName = 'App.framework';
+    const String binaryName = 'App';
+
+    final Directory iPhoneAppFrameworkDirectory = iPhoneBuildOutput.childDirectory(appFrameworkName);
+    final File iPhoneAppFrameworkFile = iPhoneAppFrameworkDirectory.childFile(binaryName);
+    await createStubAppFramework(iPhoneAppFrameworkFile, SdkType.iPhone);
+
+    final Directory simulatorAppFrameworkDirectory = simulatorBuildOutput.childDirectory(appFrameworkName);
+    final File simulatorAppFrameworkFile = simulatorAppFrameworkDirectory.childFile(binaryName);
+    await createStubAppFramework(simulatorAppFrameworkFile, SdkType.iPhoneSimulator);
+
+    final List<String> lipoCommand = <String>[
+      'xcrun',
+      'lipo',
+      '-create',
+      iPhoneAppFrameworkFile.path,
+      simulatorAppFrameworkFile.path,
+      '-output',
+      destinationAppFrameworkDirectory.childFile(binaryName).path
+    ];
+
+    final RunResult lipoResult = await processUtils.run(
+      lipoCommand,
+      allowReentrantFlutter: false,
+    );
+
+    if (lipoResult.exitCode != 0) {
+      throwToolExit('Unable to create compiled dart universal framework: ${lipoResult.stderr}');
+    }
+  }
+
+  Future<void> _produceAotAppFrameworkIfNeeded(
+    BuildInfo buildInfo,
+    Directory destinationDirectory,
+  ) async {
+    if (buildInfo.mode == BuildMode.debug) {
+      return;
+    }
+    final Status status = globals.logger.startProgress(
+      ' ├─Building Dart AOT for App.framework...',
+      timeout: timeoutConfiguration.slowOperation,
+    );
+    try {
+      await _aotBuilder.build(
+        platform: TargetPlatform.ios,
+        outputPath: destinationDirectory.path,
+        buildInfo: buildInfo,
+        // Relative paths show noise in the compiler https://github.com/dart-lang/sdk/issues/37978.
+        mainDartFile: globals.fs.path.absolute(targetFile),
+        quiet: true,
+        bitcode: true,
+        iosBuildArchs: <DarwinArch>[DarwinArch.armv7, DarwinArch.arm64],
+      );
+    } finally {
+      status.stop();
+    }
   }
 
   Future<void> _producePlugins(

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math';
 import 'dart:ui';
 
@@ -314,14 +312,14 @@ void main() {
             children: <Widget>[
               Semantics(
                 value: 'value one',
-                child: const SizedBox(
+                child: Container(
                   height: 10.0,
                   width: 10.0,
                 ),
               ),
               Semantics(
                 value: 'value two',
-                child: const SizedBox(
+                child: Container(
                   height: 10.0,
                   width: 10.0,
                 ),

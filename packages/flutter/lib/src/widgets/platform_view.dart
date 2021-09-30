@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -398,21 +396,22 @@ class _HtmlElementViewController extends PlatformViewController {
   }
 
   @override
-  Future<void> clearFocus() async {
+  void clearFocus() {
     // Currently this does nothing on Flutter Web.
     // TODO(het): Implement this. See https://github.com/flutter/flutter/issues/39496
   }
 
   @override
-  Future<void> dispatchPointerEvent(PointerEvent event) async {
+  void dispatchPointerEvent(PointerEvent event) {
     // We do not dispatch pointer events to HTML views because they may contain
     // cross-origin iframes, which only accept user-generated events.
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() {
     if (_initialized) {
-      await SystemChannels.platform_views.invokeMethod<void>('dispose', viewId);
+      // Asynchronously dispose this view.
+      SystemChannels.platform_views.invokeMethod<void>('dispose', viewId);
     }
   }
 }
@@ -903,9 +902,8 @@ class _PlatformViewLinkState extends State<PlatformViewLink> {
 
 /// Integrates a platform view with Flutter's compositor, touch, and semantics subsystems.
 ///
-/// The compositor integration is done by adding a [PlatformViewLayer] to the layer tree. [PlatformViewSurface]
-/// isn't supported on all platforms (e.g on Android platform views can be composited by using a [TextureLayer] or
-/// [AndroidViewSurface]).
+/// The compositor integration is done by adding a [PlatformViewLayer] to the layer tree. [PlatformViewLayer]
+/// isn't supported on all platforms (e.g on Android platform views are composited using a [TextureLayer]).
 /// Custom Flutter embedders can support [PlatformViewLayer]s by implementing a SystemCompositor.
 ///
 /// The widget fills all available space, the parent of this object must provide bounded layout
@@ -915,7 +913,7 @@ class _PlatformViewLinkState extends State<PlatformViewLink> {
 ///
 /// See also:
 ///
-///  * [AndroidView] which embeds an Android platform view in the widget hierarchy using a [TextureLayer].
+///  * [AndroidView] which embeds an Android platform view in the widget hierarchy.
 ///  * [UIKitView] which embeds an iOS platform view in the widget hierarchy.
 // TODO(amirh): Link to the embedder's system compositor documentation once available.
 class PlatformViewSurface extends LeafRenderObjectWidget {
@@ -994,48 +992,5 @@ class PlatformViewSurface extends LeafRenderObjectWidget {
       ..controller = controller
       ..hitTestBehavior = hitTestBehavior
       ..updateGestureRecognizers(gestureRecognizers);
-  }
-}
-
-/// Integrates an Android view with Flutter's compositor, touch, and semantics subsystems.
-///
-/// The compositor integration is done by adding a [PlatformViewLayer] to the layer tree. [PlatformViewLayer]
-/// isn't supported on all platforms. Custom Flutter embedders can support
-/// [PlatformViewLayer]s by implementing a SystemCompositor.
-///
-/// The widget fills all available space, the parent of this object must provide bounded layout
-/// constraints.
-///
-/// If the associated platform view is not created, the [AndroidViewSurface] does not paint any contents.
-///
-/// See also:
-///
-///  * [AndroidView] which embeds an Android platform view in the widget hierarchy using a [TextureLayer].
-///  * [UIKitView] which embeds an iOS platform view in the widget hierarchy.
-class AndroidViewSurface extends PlatformViewSurface {
-  /// Construct an `AndroidPlatformViewSurface`.
-  const AndroidViewSurface({
-    Key key,
-    @required AndroidViewController controller,
-    @required PlatformViewHitTestBehavior hitTestBehavior,
-    @required Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers,
-  }) : assert(controller != null),
-       assert(hitTestBehavior != null),
-       assert(gestureRecognizers != null),
-       super(
-          key: key,
-          controller: controller,
-          hitTestBehavior: hitTestBehavior,
-          gestureRecognizers: gestureRecognizers);
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    final PlatformViewRenderBox renderBox =
-        super.createRenderObject(context) as PlatformViewRenderBox;
-
-    (controller as AndroidViewController).pointTransformer =
-        (Offset position) => renderBox.globalToLocal(position);
-
-    return renderBox;
   }
 }

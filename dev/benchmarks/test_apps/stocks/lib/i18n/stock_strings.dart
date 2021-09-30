@@ -4,14 +4,16 @@
 
 import 'dart:async';
 
-// ignore: unused_import
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+// ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 
 import 'stock_strings_en.dart';
 import 'stock_strings_es.dart';
+
+// ignore_for_file: unnecessary_brace_in_string_interps
 
 /// Callers can lookup localized strings with an instance of StockStrings returned
 /// by `StockStrings.of(context)`.
@@ -40,7 +42,8 @@ import 'stock_strings_es.dart';
 ///   # Internationalization support.
 ///   flutter_localizations:
 ///     sdk: flutter
-///   intl: 0.16.1
+///   intl: 0.16.0
+///   intl_translation: 0.17.7
 ///
 ///   # rest of dependencies
 /// ```
@@ -96,7 +99,7 @@ abstract class StockStrings {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('en', 'US'),
+    Locale('en, US'),
     Locale('es')
   ];
 
@@ -126,24 +129,15 @@ class _StockStringsDelegate extends LocalizationsDelegate<StockStrings> {
 }
 
 StockStrings _lookupStockStrings(Locale locale) {
-
-
-  // Lookup logic when language+country codes are specified.
-  switch (locale.languageCode) {
+  switch(locale.languageCode) {
     case 'en': {
       switch (locale.countryCode) {
         case 'US': return StockStringsEnUs();
       }
-      break;
+      return StockStringsEn();
     }
-  }
-
-  // Lookup logic when only language code is specified.
-  switch (locale.languageCode) {
-    case 'en': return StockStringsEn();
     case 'es': return StockStringsEs();
   }
-
   assert(false, 'StockStrings.delegate failed to load unsupported locale "$locale"');
   return null;
 }

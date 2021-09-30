@@ -4,16 +4,15 @@
 
 import 'dart:async';
 
-import 'package:flutter_tools/src/artifacts.dart';
 import 'package:flutter_tools/src/base/io.dart';
-import 'package:flutter_tools/src/base/platform.dart';
+
 import 'package:flutter_tools/src/base/terminal.dart';
 import 'package:flutter_tools/src/build_info.dart';
 import 'package:flutter_tools/src/compile.dart';
 import 'package:flutter_tools/src/convert.dart';
 import 'package:mockito/mockito.dart';
-import 'package:package_config/package_config.dart';
 import 'package:process/process.dart';
+import 'package:platform/platform.dart';
 
 import '../src/common.dart';
 import '../src/context.dart';
@@ -60,12 +59,10 @@ void main() {
       buildMode: BuildMode.debug,
       trackWidgetCreation: false,
       dartDefines: const <String>[],
-      packageConfig: PackageConfig.empty,
-      packagesPath: '.packages',
     );
 
     expect(mockFrontendServerStdIn.getAndClear(), isEmpty);
-    expect(testLogger.errorText, equals('line1\nline2\n'));
+    expect(testLogger.errorText, equals('\nCompiler message:\nline1\nline2\n'));
     expect(output.outputFilename, equals('/path/to/main.dart.dill'));
     final VerificationResult argVerification = verify(mockProcessManager.start(captureAny));
     expect(argVerification.captured.single, containsAll(<String>[
@@ -75,7 +72,6 @@ void main() {
     ProcessManager: () => mockProcessManager,
     OutputPreferences: () => OutputPreferences(showColor: false),
     Platform: kNoColorTerminalPlatform,
-    Artifacts: () => Artifacts.test(),
   });
 
   testUsingContext('passes correct AOT config to kernel compiler in aot/profile mode', () async {
@@ -92,8 +88,6 @@ void main() {
       trackWidgetCreation: false,
       aot: true,
       dartDefines: const <String>[],
-      packageConfig: PackageConfig.empty,
-      packagesPath: '.packages',
     );
 
     expect(mockFrontendServerStdIn.getAndClear(), isEmpty);
@@ -110,7 +104,6 @@ void main() {
     ProcessManager: () => mockProcessManager,
     OutputPreferences: () => OutputPreferences(showColor: false),
     Platform: kNoColorTerminalPlatform,
-    Artifacts: () => Artifacts.test(),
   });
 
 
@@ -128,8 +121,6 @@ void main() {
       trackWidgetCreation: false,
       aot: true,
       dartDefines: const <String>[],
-      packageConfig: PackageConfig.empty,
-      packagesPath: '.packages',
     );
 
     expect(mockFrontendServerStdIn.getAndClear(), isEmpty);
@@ -146,7 +137,6 @@ void main() {
     ProcessManager: () => mockProcessManager,
     OutputPreferences: () => OutputPreferences(showColor: false),
     Platform: kNoColorTerminalPlatform,
-    Artifacts: () => Artifacts.test(),
   });
 
   testUsingContext('batch compile single dart failed compilation', () async {
@@ -162,18 +152,15 @@ void main() {
       buildMode: BuildMode.debug,
       trackWidgetCreation: false,
       dartDefines: const <String>[],
-      packageConfig: PackageConfig.empty,
-      packagesPath: '.packages',
     );
 
     expect(mockFrontendServerStdIn.getAndClear(), isEmpty);
-    expect(testLogger.errorText, equals('line1\nline2\n'));
+    expect(testLogger.errorText, equals('\nCompiler message:\nline1\nline2\n'));
     expect(output, equals(null));
   }, overrides: <Type, Generator>{
     ProcessManager: () => mockProcessManager,
     OutputPreferences: () => OutputPreferences(showColor: false),
     Platform: kNoColorTerminalPlatform,
-    Artifacts: () => Artifacts.test(),
   });
 
   testUsingContext('batch compile single dart abnormal compiler termination', () async {
@@ -192,17 +179,14 @@ void main() {
       buildMode: BuildMode.debug,
       trackWidgetCreation: false,
       dartDefines: const <String>[],
-      packageConfig: PackageConfig.empty,
-      packagesPath: '.packages',
     );
     expect(mockFrontendServerStdIn.getAndClear(), isEmpty);
-    expect(testLogger.errorText, equals('line1\nline2\n'));
+    expect(testLogger.errorText, equals('\nCompiler message:\nline1\nline2\n'));
     expect(output, equals(null));
   }, overrides: <Type, Generator>{
     ProcessManager: () => mockProcessManager,
     OutputPreferences: () => OutputPreferences(showColor: false),
     Platform: kNoColorTerminalPlatform,
-    Artifacts: () => Artifacts.test(),
   });
 
   testUsingContext('passes dartDefines to the kernel compiler', () async {
@@ -217,8 +201,6 @@ void main() {
       buildMode: BuildMode.debug,
       trackWidgetCreation: false,
       dartDefines: const <String>['FOO=bar', 'BAZ=qux'],
-      packageConfig: PackageConfig.empty,
-      packagesPath: '.packages',
     );
 
     expect(latestCommand, containsAllInOrder(<String>['-DFOO=bar', '-DBAZ=qux']));
@@ -226,7 +208,6 @@ void main() {
     ProcessManager: () => mockProcessManager,
     OutputPreferences: () => OutputPreferences(showColor: false),
     Platform: kNoColorTerminalPlatform,
-    Artifacts: () => Artifacts.test(),
   });
 }
 

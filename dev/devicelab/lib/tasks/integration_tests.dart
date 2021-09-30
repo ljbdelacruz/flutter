@@ -71,6 +71,9 @@ TaskFunction createCodegenerationIntegrationTest() {
   return DriverTest(
     '${flutterDirectory.path}/dev/integration_tests/codegen',
     'lib/main.dart',
+    environment: <String, String>{
+      'FLUTTER_EXPERIMENTAL_BUILD': 'true',
+    },
   );
 }
 

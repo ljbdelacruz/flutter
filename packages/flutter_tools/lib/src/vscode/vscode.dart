@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import '../base/file_system.dart';
-import '../base/platform.dart';
 import '../base/utils.dart';
 import '../base/version.dart';
 import '../convert.dart';
@@ -31,7 +30,7 @@ class VsCode {
 
     // If the extensions directory doesn't exist at all, the listSync()
     // below will fail, so just bail out early.
-    const ValidationMessage notInstalledMessage = ValidationMessage.error(
+    final ValidationMessage notInstalledMessage = ValidationMessage.error(
           'Flutter extension not installed; install from\n$extensionMarketplaceUrl');
     if (!globals.fs.isDirectorySync(extensionDirectory)) {
       _validationMessages.add(notInstalledMessage);
@@ -87,18 +86,15 @@ class VsCode {
 
   Iterable<ValidationMessage> get validationMessages => _validationMessages;
 
-  static List<VsCode> allInstalled(
-    FileSystem fileSystem,
-    Platform platform,
-  ) {
-    if (platform.isMacOS) {
-      return _installedMacOS(fileSystem);
+  static List<VsCode> allInstalled() {
+    if (globals.platform.isMacOS) {
+      return _installedMacOS();
     }
-    if (platform.isWindows) {
-      return _installedWindows(fileSystem, platform);
+    if (globals.platform.isWindows) {
+      return _installedWindows();
     }
-    if (platform.isLinux) {
-      return _installedLinux(fileSystem);
+    if (globals.platform.isLinux) {
+      return _installedLinux();
     }
     // VS Code isn't supported on the other platforms.
     return <VsCode>[];
@@ -112,14 +108,14 @@ class VsCode {
   // macOS Extensions:
   //   $HOME/.vscode/extensions
   //   $HOME/.vscode-insiders/extensions
-  static List<VsCode> _installedMacOS(FileSystem fileSystem) {
+  static List<VsCode> _installedMacOS() {
     return _findInstalled(<_VsCodeInstallLocation>[
       _VsCodeInstallLocation(
-        fileSystem.path.join('/Applications', 'Visual Studio Code.app', 'Contents'),
+        globals.fs.path.join('/Applications', 'Visual Studio Code.app', 'Contents'),
         '.vscode',
       ),
       _VsCodeInstallLocation(
-        fileSystem.path.join(
+        globals.fs.path.join(
           globals.fsUtils.homeDirPath,
           'Applications',
           'Visual Studio Code.app',
@@ -128,12 +124,12 @@ class VsCode {
         '.vscode',
       ),
       _VsCodeInstallLocation(
-        fileSystem.path.join('/Applications', 'Visual Studio Code - Insiders.app', 'Contents'),
+        globals.fs.path.join('/Applications', 'Visual Studio Code - Insiders.app', 'Contents'),
         '.vscode-insiders',
         isInsiders: true,
       ),
       _VsCodeInstallLocation(
-        fileSystem.path.join(
+        globals.fs.path.join(
           globals.fsUtils.homeDirPath,
           'Applications',
           'Visual Studio Code - Insiders.app',
@@ -142,7 +138,7 @@ class VsCode {
         '.vscode-insiders',
         isInsiders: true,
       ),
-    ], fileSystem);
+    ]);
   }
 
   // Windows:
@@ -157,56 +153,51 @@ class VsCode {
   // Windows Extensions:
   //   $HOME/.vscode/extensions
   //   $HOME/.vscode-insiders/extensions
-  static List<VsCode> _installedWindows(
-    FileSystem fileSystem,
-    Platform platform,
-  ) {
-    final String progFiles86 = platform.environment['programfiles(x86)'];
-    final String progFiles = platform.environment['programfiles'];
-    final String localAppData = platform.environment['localappdata'];
+  static List<VsCode> _installedWindows() {
+    final String progFiles86 = globals.platform.environment['programfiles(x86)'];
+    final String progFiles = globals.platform.environment['programfiles'];
+    final String localAppData = globals.platform.environment['localappdata'];
 
-    final List<_VsCodeInstallLocation> searchLocations = <_VsCodeInstallLocation>[
-      if (localAppData != null)
-        _VsCodeInstallLocation(
-          fileSystem.path.join(localAppData, r'Programs\Microsoft VS Code'),
-          '.vscode',
-        ),
-      if (progFiles86 != null)
-        ...<_VsCodeInstallLocation>[
-          _VsCodeInstallLocation(
-            fileSystem.path.join(progFiles86, 'Microsoft VS Code'),
-            '.vscode',
-            edition: '32-bit edition',
-          ),
-          _VsCodeInstallLocation(
-            fileSystem.path.join(progFiles86, 'Microsoft VS Code Insiders'),
-            '.vscode-insiders',
-            edition: '32-bit edition',
-            isInsiders: true,
-          ),
-        ],
-      if (progFiles != null)
-        ...<_VsCodeInstallLocation>[
-          _VsCodeInstallLocation(
-            fileSystem.path.join(progFiles, 'Microsoft VS Code'),
-            '.vscode',
-            edition: '64-bit edition',
-          ),
-          _VsCodeInstallLocation(
-            fileSystem.path.join(progFiles, 'Microsoft VS Code Insiders'),
-            '.vscode-insiders',
-            edition: '64-bit edition',
-            isInsiders: true,
-          ),
-        ],
-      if (localAppData != null)
-        _VsCodeInstallLocation(
-          fileSystem.path.join(localAppData, r'Programs\Microsoft VS Code Insiders'),
-          '.vscode-insiders',
-          isInsiders: true,
-        ),
-    ];
-    return _findInstalled(searchLocations, fileSystem);
+    final List<_VsCodeInstallLocation> searchLocations =
+        <_VsCodeInstallLocation>[];
+
+    if (localAppData != null) {
+      searchLocations.add(_VsCodeInstallLocation(
+        globals.fs.path.join(localAppData, r'Programs\Microsoft VS Code'),
+        '.vscode',
+      ));
+    }
+    searchLocations.add(_VsCodeInstallLocation(
+      globals.fs.path.join(progFiles86, 'Microsoft VS Code'),
+      '.vscode',
+      edition: '32-bit edition',
+    ));
+    searchLocations.add(_VsCodeInstallLocation(
+      globals.fs.path.join(progFiles, 'Microsoft VS Code'),
+      '.vscode',
+      edition: '64-bit edition',
+    ));
+    if (localAppData != null) {
+      searchLocations.add(_VsCodeInstallLocation(
+        globals.fs.path.join(localAppData, r'Programs\Microsoft VS Code Insiders'),
+        '.vscode-insiders',
+        isInsiders: true,
+      ));
+    }
+    searchLocations.add(_VsCodeInstallLocation(
+      globals.fs.path.join(progFiles86, 'Microsoft VS Code Insiders'),
+      '.vscode-insiders',
+      edition: '32-bit edition',
+      isInsiders: true,
+    ));
+    searchLocations.add(_VsCodeInstallLocation(
+      globals.fs.path.join(progFiles, 'Microsoft VS Code Insiders'),
+      '.vscode-insiders',
+      edition: '64-bit edition',
+      isInsiders: true,
+    ));
+
+    return _findInstalled(searchLocations);
   }
 
   // Linux:
@@ -215,7 +206,7 @@ class VsCode {
   // Linux Extensions:
   //   $HOME/.vscode/extensions
   //   $HOME/.vscode-insiders/extensions
-  static List<VsCode> _installedLinux(FileSystem fileSystem) {
+  static List<VsCode> _installedLinux() {
     return _findInstalled(<_VsCodeInstallLocation>[
       const _VsCodeInstallLocation('/usr/share/code', '.vscode'),
       const _VsCodeInstallLocation(
@@ -223,13 +214,10 @@ class VsCode {
         '.vscode-insiders',
         isInsiders: true,
       ),
-    ], fileSystem);
+    ]);
   }
 
-  static List<VsCode> _findInstalled(
-    List<_VsCodeInstallLocation> allLocations,
-    FileSystem fileSystem,
-  ) {
+  static List<VsCode> _findInstalled(List<_VsCodeInstallLocation> allLocations) {
     final Iterable<_VsCodeInstallLocation> searchLocations =
       _includeInsiders
         ? allLocations
@@ -238,8 +226,8 @@ class VsCode {
     final List<VsCode> results = <VsCode>[];
 
     for (final _VsCodeInstallLocation searchLocation in searchLocations) {
-      if (fileSystem.isDirectorySync(searchLocation.installPath)) {
-        final String extensionDirectory = fileSystem.path.join(
+      if (globals.fs.isDirectorySync(searchLocation.installPath)) {
+        final String extensionDirectory = globals.fs.path.join(
           globals.fsUtils.homeDirPath,
           searchLocation.extensionsFolder,
           'extensions',

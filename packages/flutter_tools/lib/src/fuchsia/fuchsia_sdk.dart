@@ -7,7 +7,6 @@ import 'dart:async';
 import '../base/context.dart';
 import '../base/file_system.dart';
 import '../base/io.dart';
-import '../base/platform.dart';
 import '../convert.dart';
 import '../globals.dart' as globals;
 
@@ -19,8 +18,8 @@ import 'fuchsia_pm.dart';
 FuchsiaSdk get fuchsiaSdk => context.get<FuchsiaSdk>();
 
 /// Returns [true] if the current platform supports Fuchsia targets.
-bool isFuchsiaSupportedPlatform(Platform platform) {
-  return platform.isLinux || platform.isMacOS;
+bool isFuchsiaSupportedPlatform() {
+  return globals.platform.isLinux || globals.platform.isMacOS;
 }
 
 /// The Fuchsia SDK shell commands.
@@ -46,8 +45,6 @@ class FuchsiaSdk {
   FuchsiaKernelCompiler get fuchsiaKernelCompiler =>
       _fuchsiaKernelCompiler ??= FuchsiaKernelCompiler();
 
-  /// Returns any attached devices is a newline-denominated String.
-  ///
   /// Example output:
   ///    $ device-finder list -full
   ///    > 192.168.42.56 paper-pulp-bush-angel
@@ -60,7 +57,7 @@ class FuchsiaSdk {
     if (devices == null) {
       return null;
     }
-    return devices.isNotEmpty ? devices.join('\n') : null;
+    return devices.isNotEmpty ? devices[0] : null;
   }
 
   /// Returns the fuchsia system logs for an attached device where
@@ -119,7 +116,7 @@ class FuchsiaArtifacts {
   /// FUCHSIA_SSH_CONFIG) to find the ssh configuration needed to talk to
   /// a device.
   factory FuchsiaArtifacts.find() {
-    if (!isFuchsiaSupportedPlatform(globals.platform)) {
+    if (!isFuchsiaSupportedPlatform()) {
       // Don't try to find the artifacts on platforms that are not supported.
       return FuchsiaArtifacts();
     }

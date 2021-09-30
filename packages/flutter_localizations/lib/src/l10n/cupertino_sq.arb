@@ -18,7 +18,5 @@
   "cutButtonLabel": "Prit",
   "copyButtonLabel": "Kopjo",
   "pasteButtonLabel": "Ngjit",
-  "selectAllButtonLabel": "Zgjidhi të gjitha",
-  "tabSemanticsLabel": "Skeda $tabIndex nga $tabCount",
-  "modalBarrierDismissLabel": "Hiq"
+  "selectAllButtonLabel": "Zgjidhi të gjitha"
 }

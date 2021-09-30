@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -92,10 +90,8 @@ void main() {
       find.text('I am the very model of a modern major general.'),
       findsOneWidget,
     );
-    await tester.tap(find.text('Pirate package '));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
     expect(find.text('Pirate license'), findsOneWidget);
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/54385
+  }, skip: isBrowser);
 
   testWidgets('About box logic defaults to executable name for app name', (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -138,25 +134,11 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Check for packages.
     expect(find.text('AAA'), findsOneWidget);
-    expect(find.text('Another package'), findsOneWidget);
-
-    // Check license is displayed after entering into license page for 'AAA'.
-    await tester.tap(find.text('AAA'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
     expect(find.text('BBB'), findsOneWidget);
-
-    /// Go back to list of packages.
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-
-    /// Check license is displayed after entering into license page for
-    /// 'Another package'.
-    await tester.tap(find.text('Another package'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    expect(find.text('Another package'), findsOneWidget);
     expect(find.text('Another license'), findsOneWidget);
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/54385
+  }, skip: isBrowser);
 
   testWidgets('LicensePage control test with all properties', (WidgetTester tester) async {
     const FlutterLogo logo = FlutterLogo();
@@ -213,26 +195,11 @@ void main() {
       find.text('I am the very model of a modern major general.'),
       findsOneWidget,
     );
-
-    // Check for packages.
     expect(find.text('AAA'), findsOneWidget);
-    expect(find.text('Another package'), findsOneWidget);
-
-    // Check license is displayed after entering into license page for 'AAA'.
-    await tester.tap(find.text('AAA'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
     expect(find.text('BBB'), findsOneWidget);
-
-    /// Go back to list of packages.
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-
-    /// Check license is displayed after entering into license page for
-    /// 'Another package'.
-    await tester.tap(find.text('Another package'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    expect(find.text('Another package'), findsOneWidget);
     expect(find.text('Another license'), findsOneWidget);
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/54385
+  }, skip: isBrowser);
 
   testWidgets('LicensePage respects the notch', (WidgetTester tester) async {
     const double safeareaPadding = 27.0;
@@ -256,13 +223,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // The position of the top left of app bar title should indicate whether
-    // the safe area is sufficiently respected.
-    expect(
-      tester.getTopLeft(find.text('Licenses')),
-      const Offset(16.0 + safeareaPadding, 18.0 + safeareaPadding),
-    );
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/54385
+    expect(tester.getTopLeft(find.text('DEF')), const Offset(8.0 + safeareaPadding, 287.0));
+  }, skip: isBrowser);
 
   testWidgets('LicensePage returns early if unmounted', (WidgetTester tester) async {
     final Completer<LicenseEntry> licenseCompleter = Completer<LicenseEntry>();
@@ -286,8 +248,8 @@ void main() {
     await tester.pumpAndSettle();
     final FakeLicenseEntry licenseEntry = FakeLicenseEntry();
     licenseCompleter.complete(licenseEntry);
-    expect(licenseEntry.packagesCalled, false);
-  });
+    expect(licenseEntry.paragraphsCalled, false);
+  }, skip: isBrowser);
 
   testWidgets('LicensePage returns late if unmounted', (WidgetTester tester) async {
     final Completer<LicenseEntry> licenseCompleter = Completer<LicenseEntry>();
@@ -311,8 +273,8 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(licenseEntry.packagesCalled, true);
-  });
+    expect(licenseEntry.paragraphsCalled, true);
+  }, skip: isBrowser);
 
   testWidgets('LicensePage logic defaults to executable name for app name', (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -560,16 +522,16 @@ void main() {
 class FakeLicenseEntry extends LicenseEntry {
   FakeLicenseEntry();
 
-  bool get packagesCalled => _packagesCalled;
-  bool _packagesCalled = false;
+  bool get paragraphsCalled => _paragraphsCalled;
+  bool _paragraphsCalled = false;
 
   @override
-  Iterable<LicenseParagraph> paragraphs = <LicenseParagraph>[];
+  Iterable<String> packages = <String>[];
 
   @override
-  Iterable<String> get packages {
-    _packagesCalled = true;
-    return <String>[];
+  Iterable<LicenseParagraph> get paragraphs {
+    _paragraphsCalled = true;
+    return <LicenseParagraph>[];
   }
 }
 

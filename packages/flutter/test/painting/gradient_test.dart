@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
@@ -819,7 +817,7 @@ void main() {
       for (final Gradient gradient in gradients45) {
         testWidgets('$gradient', (WidgetTester tester) async {
           await runTest(tester, gradient, 45);
-        }, skip: isBrowser); // https://github.com/flutter/flutter/issues/41389
+        }, skip: isBrowser); // TODO(yjbanov): web does not support golden tests yet: https://github.com/flutter/flutter/issues/40297
       }
     });
 
@@ -827,7 +825,7 @@ void main() {
       for (final Gradient gradient in gradients90) {
         testWidgets('$gradient', (WidgetTester tester) async {
           await runTest(tester, gradient, 90);
-        }, skip: isBrowser); // https://github.com/flutter/flutter/issues/41389
+        }, skip: isBrowser); // TODO(yjbanov): web does not support golden tests yet: https://github.com/flutter/flutter/issues/40297
       }
     });
   });

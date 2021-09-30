@@ -4,8 +4,6 @@
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
-
 import '../application_package.dart';
 import '../base/common.dart';
 import '../base/utils.dart';
@@ -19,10 +17,10 @@ import 'build.dart';
 /// or simulator. Can only be run on a macOS host. For producing deployment
 /// .ipas, see https://flutter.dev/docs/deployment/ios.
 class BuildIOSCommand extends BuildSubCommand {
-  BuildIOSCommand({ @required bool verboseHelp }) {
+  BuildIOSCommand() {
     addTreeShakeIconsFlag();
     addSplitDebugInfoOption();
-    addBuildModeFlags(defaultToRelease: true);
+    addBuildModeFlags(defaultToRelease: false);
     usesTargetOption();
     usesFlavorOption();
     usesPubOption();
@@ -31,14 +29,9 @@ class BuildIOSCommand extends BuildSubCommand {
     addDartObfuscationOption();
     usesDartDefineOption();
     usesExtraFrontendOptions();
-    addEnableExperimentation(hide: !verboseHelp);
-    addBuildPerformanceFile(hide: !verboseHelp);
-    addBundleSkSLPathOption(hide: !verboseHelp);
-    addNullSafetyModeOptions(hide: !verboseHelp);
     argParser
       ..addFlag('simulator',
-        help: 'Build for the iOS simulator instead of the device. This changes '
-          'the default build mode to debug if otherwise unspecified.',
+        help: 'Build for the iOS simulator instead of the device.',
       )
       ..addFlag('codesign',
         defaultsTo: true,
@@ -66,11 +59,7 @@ class BuildIOSCommand extends BuildSubCommand {
       throwToolExit('Building for iOS is only supported on the Mac.');
     }
 
-    final BuildInfo buildInfo = getBuildInfo();
-    final BuildableIOSApp app = await applicationPackages.getPackageForPlatform(
-      TargetPlatform.ios,
-      buildInfo,
-    ) as BuildableIOSApp;
+    final BuildableIOSApp app = await applicationPackages.getPackageForPlatform(TargetPlatform.ios) as BuildableIOSApp;
 
     if (app == null) {
       throwToolExit('Application not configured for iOS');
@@ -82,6 +71,7 @@ class BuildIOSCommand extends BuildSubCommand {
       globals.printStatus('Warning: Building for device with codesigning disabled. You will '
         'have to manually codesign before deploying to device.');
     }
+    final BuildInfo buildInfo = getBuildInfo();
     if (forSimulator && !buildInfo.supportsSimulator) {
       throwToolExit('${toTitleCase(buildInfo.friendlyModeName)} mode is not supported for simulators.');
     }
@@ -99,7 +89,7 @@ class BuildIOSCommand extends BuildSubCommand {
     );
 
     if (!result.success) {
-      await diagnoseXcodeBuildFailure(result, globals.flutterUsage, globals.logger);
+      await diagnoseXcodeBuildFailure(result);
       throwToolExit('Encountered error while building for $logTarget.');
     }
 

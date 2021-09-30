@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -20,9 +18,9 @@ const double _singleLineVerticalPadding = 14.0;
 
 // TODO(ianh): We should check if the given text and actions are going to fit on
 // one line or not, and if they are, use the single-line layout, and if not, use
-// the multiline layout, https://github.com/flutter/flutter/issues/32782
-// See https://material.io/components/snackbars#specs, 'Longer Action Text' does
-// not match spec.
+// the multiline layout. See link above.
+
+// TODO(ianh): Implement the Tablet version of snackbar if we're "on a tablet".
 
 const Duration _snackBarTransitionDuration = Duration(milliseconds: 250);
 const Duration _snackBarDisplayDuration = Duration(milliseconds: 4000);
@@ -109,7 +107,7 @@ class SnackBarAction extends StatefulWidget {
   final VoidCallback onPressed;
 
   @override
-  State<SnackBarAction> createState() => _SnackBarActionState();
+  _SnackBarActionState createState() => _SnackBarActionState();
 }
 
 class _SnackBarActionState extends State<SnackBarAction> {

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -308,38 +306,6 @@ void main() {
     expect(find.text('BottomSheet'), findsNothing);
   });
 
-  testWidgets('Modal BottomSheet builder should only be called once', (WidgetTester tester) async {
-    BuildContext savedContext;
-
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (BuildContext context) {
-          savedContext = context;
-          return Container();
-        },
-      ),
-    ));
-
-    int numBuilderCalls = 0;
-    showModalBottomSheet<void>(
-      context: savedContext,
-      isDismissible: false,
-      enableDrag: true,
-      builder: (BuildContext context) {
-        numBuilderCalls++;
-        return const Text('BottomSheet');
-      },
-    );
-
-    await tester.pumpAndSettle();
-    expect(numBuilderCalls, 1);
-
-    // Swipe the bottom sheet to dismiss it.
-    await tester.drag(find.text('BottomSheet'), const Offset(0.0, 150.0));
-    await tester.pumpAndSettle(); // Bottom sheet dismiss animation.
-    expect(numBuilderCalls, 1);
-  });
-
   testWidgets('Verify that a downwards fling dismisses a persistent BottomSheet', (WidgetTester tester) async {
     final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
     bool showBottomSheetThenCalled = false;
@@ -378,7 +344,7 @@ void main() {
 
     // The fling below must be such that the velocity estimation examines an
     // offset greater than the kTouchSlop. Too slow or too short a distance, and
-    // it won't trigger. Also, it must not be so much that it drags the bottom
+    // it won't trigger. Also, it musn't be so much that it drags the bottom
     // sheet off the screen, or we won't see it after we pump!
     await tester.fling(find.text('BottomSheet'), const Offset(0.0, 50.0), 2000.0);
     await tester.pump(); // drain the microtask queue (Future completion callback)
@@ -504,24 +470,19 @@ void main() {
         TestSemantics.rootChild(
           children: <TestSemantics>[
             TestSemantics(
+              label: 'Dialog',
+              textDirection: TextDirection.ltr,
+              flags: <SemanticsFlag>[
+                SemanticsFlag.scopesRoute,
+                SemanticsFlag.namesRoute,
+              ],
               children: <TestSemantics>[
                 TestSemantics(
-                  label: 'Dialog',
+                  label: 'BottomSheet',
                   textDirection: TextDirection.ltr,
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.scopesRoute,
-                    SemanticsFlag.namesRoute,
-                  ],
-                  children: <TestSemantics>[
-                    TestSemantics(
-                      label: 'BottomSheet',
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ],
                 ),
               ],
             ),
-            TestSemantics(),
           ],
         ),
       ],
@@ -608,30 +569,25 @@ void main() {
         TestSemantics.rootChild(
           children: <TestSemantics>[
             TestSemantics(
+              label: 'Dialog',
+              textDirection: TextDirection.ltr,
+              flags: <SemanticsFlag>[
+                SemanticsFlag.scopesRoute,
+                SemanticsFlag.namesRoute,
+              ],
               children: <TestSemantics>[
                 TestSemantics(
-                  label: 'Dialog',
-                  textDirection: TextDirection.ltr,
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.scopesRoute,
-                    SemanticsFlag.namesRoute,
-                  ],
+                  flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
+                  actions: <SemanticsAction>[SemanticsAction.scrollDown, SemanticsAction.scrollUp],
                   children: <TestSemantics>[
                     TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
-                      actions: <SemanticsAction>[SemanticsAction.scrollDown, SemanticsAction.scrollUp],
-                      children: <TestSemantics>[
-                        TestSemantics(
-                          label: 'BottomSheet',
-                          textDirection: TextDirection.ltr,
-                        ),
-                      ],
+                      label: 'BottomSheet',
+                      textDirection: TextDirection.ltr,
                     ),
                   ],
                 ),
               ],
             ),
-            TestSemantics(),
           ],
         ),
       ],

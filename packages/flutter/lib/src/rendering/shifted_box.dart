@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -628,11 +626,8 @@ class RenderUnconstrainedBox extends RenderAligningShiftedBox with DebugOverflow
     @required TextDirection textDirection,
     Axis constrainedAxis,
     RenderBox child,
-    Clip clipBehavior = Clip.none,
   }) : assert(alignment != null),
-       assert(clipBehavior != null),
        _constrainedAxis = constrainedAxis,
-       _clipBehavior = clipBehavior,
        super.mixin(alignment, textDirection, child);
 
   /// The axis to retain constraints on, if any.
@@ -653,20 +648,6 @@ class RenderUnconstrainedBox extends RenderAligningShiftedBox with DebugOverflow
   Rect _overflowContainerRect = Rect.zero;
   Rect _overflowChildRect = Rect.zero;
   bool _isOverflowing = false;
-
-  /// {@macro flutter.widgets.Clip}
-  ///
-  /// Defaults to [Clip.none], and must not be null.
-  Clip get clipBehavior => _clipBehavior;
-  Clip _clipBehavior = Clip.none;
-  set clipBehavior(Clip value) {
-    assert(value != null);
-    if (value != _clipBehavior) {
-      _clipBehavior = value;
-      markNeedsPaint();
-      markNeedsSemanticsUpdate();
-    }
-  }
 
   @override
   void performLayout() {
@@ -713,12 +694,8 @@ class RenderUnconstrainedBox extends RenderAligningShiftedBox with DebugOverflow
       return;
     }
 
-    if (clipBehavior == Clip.none) {
-      super.paint(context, offset);
-    } else {
-      // We have overflow and the clipBehavior isn't none. Clip it.
-      context.pushClipRect(needsCompositing, offset, Offset.zero & size, super.paint, clipBehavior: clipBehavior);
-    }
+    // We have overflow. Clip it.
+    context.pushClipRect(needsCompositing, offset, Offset.zero & size, super.paint);
 
     // Display the overflow indicator.
     assert(() {

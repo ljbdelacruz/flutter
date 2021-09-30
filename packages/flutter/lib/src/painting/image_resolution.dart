@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
@@ -122,7 +120,6 @@ const String _kAssetManifestFileName = 'AssetManifest.json';
 ///
 ///  * [Image.asset] for a shorthand of an [Image] widget backed by [AssetImage]
 ///    when used without a scale.
-@immutable
 class AssetImage extends AssetBundleImageProvider {
   /// Creates an object that fetches an image from an asset bundle.
   ///

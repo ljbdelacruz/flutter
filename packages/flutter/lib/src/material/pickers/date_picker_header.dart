@@ -2,17 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/widgets.dart';
 
 import '../color_scheme.dart';
 import '../icon_button.dart';
-import '../material.dart';
 import '../text_theme.dart';
 import '../theme.dart';
 
-// This is an internal implementation file. Even though there are public
+// NOTE: This is an internal implementation file. Even though there are public
 // classes and functions defined here, they are only meant to be used by the
 // date picker implementation and are not exported as part of the Material library.
 // See pickers.dart for exactly what is considered part of the public API.
@@ -28,7 +25,6 @@ const double _headerPaddingLandscape = 16.0;
 ///
 /// * Single Date picker with calendar mode.
 /// * Single Date picker with manual input mode.
-/// * Date Range picker with manual input mode.
 ///
 /// [helpText], [orientation], [icon], [onIconPressed] are required and must be
 /// non-null.
@@ -116,7 +112,7 @@ class DatePickerHeader extends StatelessWidget {
       titleText,
       semanticsLabel: titleSemanticsLabel ?? titleText,
       style: titleStyle,
-      maxLines: orientation == Orientation.portrait ? 1 : 2,
+      maxLines: (isShort || orientation == Orientation.portrait) ? 1 : 2,
       overflow: TextOverflow.ellipsis,
     );
     final IconButton icon = IconButton(
@@ -128,65 +124,68 @@ class DatePickerHeader extends StatelessWidget {
 
     switch (orientation) {
       case Orientation.portrait:
-         return SizedBox(
-           height: _datePickerHeaderPortraitHeight,
-           child: Material(
-             color: primarySurfaceColor,
-             child: Padding(
-               padding: const EdgeInsetsDirectional.only(
-                 start: 24,
-                 end: 12,
-               ),
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: <Widget>[
-                   const SizedBox(height: 16),
-                   Flexible(child: help),
-                   const SizedBox(height: 38),
-                   Row(
-                     children: <Widget>[
-                       Expanded(child: title),
-                       icon,
-                     ],
-                   ),
-                 ],
-               ),
-             ),
-           ),
-         );
-      case Orientation.landscape:
-        return SizedBox(
-          width: _datePickerHeaderLandscapeWidth,
-          child: Material(
-            color: primarySurfaceColor,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: _headerPaddingLandscape,
+         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              height: _datePickerHeaderPortraitHeight,
+              color: primarySurfaceColor,
+              padding: const EdgeInsetsDirectional.only(
+                start: 24,
+                end: 12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const SizedBox(height: 16),
+                  Flexible(child: help),
+                  const SizedBox(height: 38),
+                  Row(
+                    children: <Widget>[
+                      Expanded(child: title),
+                      icon,
+                    ],
                   ),
-                  child: help,
-                ),
-                SizedBox(height: isShort ? 16 : 56),
-                Expanded(
-                  child: Padding(
+                ],
+              ),
+            ),
+          ],
+        );
+      case Orientation.landscape:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              width: _datePickerHeaderLandscapeWidth,
+              color: primarySurfaceColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: _headerPaddingLandscape,
+                    ),
+                    child: help,
+                  ),
+                  SizedBox(height: isShort ? 16 : 56),
+                  Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: _headerPaddingLandscape,
                     ),
                     child: title,
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                    ),
+                    child: icon,
                   ),
-                  child: icon,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         );
     }
     return null;

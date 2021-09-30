@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
@@ -109,7 +107,7 @@ class Table extends RenderObjectWidget {
     this.textDirection,
     this.border,
     this.defaultVerticalAlignment = TableCellVerticalAlignment.top,
-    this.textBaseline = TextBaseline.alphabetic,
+    this.textBaseline,
   }) : assert(children != null),
        assert(defaultColumnWidth != null),
        assert(defaultVerticalAlignment != null),
@@ -201,8 +199,6 @@ class Table extends RenderObjectWidget {
   final TableCellVerticalAlignment defaultVerticalAlignment;
 
   /// The text baseline to use when aligning rows using [TableCellVerticalAlignment.baseline].
-  ///
-  /// Defaults to [TextBaseline.alphabetic].
   final TextBaseline textBaseline;
 
   final List<Decoration> _rowDecorations;

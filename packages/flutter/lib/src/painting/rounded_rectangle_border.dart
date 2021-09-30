@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui' as ui show lerpDouble;
 
 import 'package:flutter/foundation.dart';
@@ -26,16 +24,18 @@ import 'edge_insets.dart';
 ///  * [BorderSide], which is used to describe each side of the box.
 ///  * [Border], which, when used with [BoxDecoration], can also
 ///    describe a rounded rectangle.
-class RoundedRectangleBorder extends OutlinedBorder {
+class RoundedRectangleBorder extends ShapeBorder {
   /// Creates a rounded rectangle border.
   ///
   /// The arguments must not be null.
   const RoundedRectangleBorder({
-    BorderSide side = BorderSide.none,
+    this.side = BorderSide.none,
     this.borderRadius = BorderRadius.zero,
   }) : assert(side != null),
-       assert(borderRadius != null),
-       super(side: side);
+       assert(borderRadius != null);
+
+  /// The style of this border.
+  final BorderSide side;
 
   /// The radii for each corner.
   final BorderRadiusGeometry borderRadius;
@@ -91,16 +91,6 @@ class RoundedRectangleBorder extends OutlinedBorder {
     return super.lerpTo(b, t);
   }
 
-  /// Returns a copy of this RoundedRectangleBorder with the given fields
-  /// replaced with the new values.
-  @override
-  RoundedRectangleBorder copyWith({ BorderSide side, BorderRadius borderRadius }) {
-    return RoundedRectangleBorder(
-      side: side ?? this.side,
-      borderRadius: borderRadius ?? this.borderRadius,
-    );
-  }
-
   @override
   Path getInnerPath(Rect rect, { TextDirection textDirection }) {
     return Path()
@@ -150,15 +140,16 @@ class RoundedRectangleBorder extends OutlinedBorder {
   }
 }
 
-class _RoundedRectangleToCircleBorder extends OutlinedBorder {
+class _RoundedRectangleToCircleBorder extends ShapeBorder {
   const _RoundedRectangleToCircleBorder({
-    BorderSide side = BorderSide.none,
+    this.side = BorderSide.none,
     this.borderRadius = BorderRadius.zero,
     @required this.circleness,
   }) : assert(side != null),
        assert(borderRadius != null),
-       assert(circleness != null),
-       super(side: side);
+       assert(circleness != null);
+
+  final BorderSide side;
 
   final BorderRadiusGeometry borderRadius;
 
@@ -270,15 +261,6 @@ class _RoundedRectangleToCircleBorder extends OutlinedBorder {
   Path getOuterPath(Rect rect, { TextDirection textDirection }) {
     return Path()
       ..addRRect(_adjustBorderRadius(rect, textDirection).toRRect(_adjustRect(rect)));
-  }
-
-  @override
-  _RoundedRectangleToCircleBorder copyWith({ BorderSide side, BorderRadius borderRadius, double circleness }) {
-    return _RoundedRectangleToCircleBorder(
-      side: side ?? this.side,
-      borderRadius: borderRadius ?? this.borderRadius,
-      circleness: circleness ?? this.circleness,
-    );
   }
 
   @override

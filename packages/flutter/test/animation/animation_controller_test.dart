@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -821,7 +819,7 @@ void main() {
       debugSemanticsDisableAnimations = null;
     });
 
-    test('AnimationBehavior.normal runs "faster" than AnimationBehavior.preserve', () {
+    test('AnimationBehavior.normal runs "faster" whan AnimationBehavior.preserve', () {
       debugSemanticsDisableAnimations = true;
       final AnimationController controller = AnimationController(
         vsync: const TestVSync(),

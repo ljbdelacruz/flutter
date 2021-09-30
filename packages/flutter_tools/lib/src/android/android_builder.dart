@@ -12,6 +12,7 @@ import '../base/file_system.dart';
 import '../build_info.dart';
 import '../globals.dart' as globals;
 import '../project.dart';
+import 'android_sdk.dart';
 import 'gradle.dart';
 
 /// The builder in the current context.
@@ -84,11 +85,9 @@ class _AndroidBuilderImpl extends AndroidBuilder {
         androidPackage: project.manifest.androidPackage,
         repoDirectory: getRepoDirectory(outputDirectory),
         buildNumber: buildNumber,
-        logger: globals.logger,
-        fileSystem: globals.fs,
       );
     } finally {
-      globals.androidSdk?.reinitialize();
+      androidSdk?.reinitialize();
     }
   }
 
@@ -108,7 +107,7 @@ class _AndroidBuilderImpl extends AndroidBuilder {
         localGradleErrors: gradleErrors,
       );
     } finally {
-      globals.androidSdk?.reinitialize();
+      androidSdk?.reinitialize();
     }
   }
 
@@ -128,7 +127,7 @@ class _AndroidBuilderImpl extends AndroidBuilder {
         localGradleErrors: gradleErrors,
       );
     } finally {
-      globals.androidSdk?.reinitialize();
+      androidSdk?.reinitialize();
     }
   }
 }

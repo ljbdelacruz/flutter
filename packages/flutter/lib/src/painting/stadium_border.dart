@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:ui' as ui show lerpDouble;
 
 import 'package:flutter/foundation.dart';
@@ -26,11 +24,14 @@ import 'rounded_rectangle_border.dart';
 /// See also:
 ///
 ///  * [BorderSide], which is used to describe the border of the stadium.
-class StadiumBorder extends OutlinedBorder {
+class StadiumBorder extends ShapeBorder {
   /// Create a stadium border.
   ///
   /// The [side] argument must not be null.
-  const StadiumBorder({ BorderSide side = BorderSide.none }) : assert(side != null), super(side: side);
+  const StadiumBorder({this.side = BorderSide.none}) : assert(side != null);
+
+  /// The style of this border.
+  final BorderSide side;
 
   @override
   EdgeInsetsGeometry get dimensions {
@@ -83,11 +84,6 @@ class StadiumBorder extends OutlinedBorder {
   }
 
   @override
-  StadiumBorder copyWith({ BorderSide side }) {
-    return StadiumBorder(side: side ?? this.side);
-  }
-
-  @override
   Path getInnerPath(Rect rect, { TextDirection textDirection }) {
     final Radius radius = Radius.circular(rect.shortestSide / 2.0);
     return Path()
@@ -133,13 +129,14 @@ class StadiumBorder extends OutlinedBorder {
 }
 
 // Class to help with transitioning to/from a CircleBorder.
-class _StadiumToCircleBorder extends OutlinedBorder {
+class _StadiumToCircleBorder extends ShapeBorder {
   const _StadiumToCircleBorder({
-    BorderSide side = BorderSide.none,
+    this.side = BorderSide.none,
     this.circleness = 0.0,
   }) : assert(side != null),
-       assert(circleness != null),
-       super(side: side);
+       assert(circleness != null);
+
+  final BorderSide side;
 
   final double circleness;
 
@@ -243,14 +240,6 @@ class _StadiumToCircleBorder extends OutlinedBorder {
   }
 
   @override
-  _StadiumToCircleBorder copyWith({ BorderSide side, double circleness }) {
-    return _StadiumToCircleBorder(
-      side: side ?? this.side,
-      circleness: circleness ?? this.circleness,
-    );
-  }
-
-  @override
   void paint(Canvas canvas, Rect rect, { TextDirection textDirection }) {
     switch (side.style) {
       case BorderStyle.none:
@@ -289,15 +278,16 @@ class _StadiumToCircleBorder extends OutlinedBorder {
 }
 
 // Class to help with transitioning to/from a RoundedRectBorder.
-class _StadiumToRoundedRectangleBorder extends OutlinedBorder {
+class _StadiumToRoundedRectangleBorder extends ShapeBorder {
   const _StadiumToRoundedRectangleBorder({
-    BorderSide side = BorderSide.none,
+    this.side = BorderSide.none,
     this.borderRadius = BorderRadius.zero,
     this.rectness = 0.0,
   }) : assert(side != null),
        assert(borderRadius != null),
-       assert(rectness != null),
-       super(side: side);
+       assert(rectness != null);
+
+  final BorderSide side;
 
   final BorderRadius borderRadius;
 
@@ -389,15 +379,6 @@ class _StadiumToRoundedRectangleBorder extends OutlinedBorder {
   Path getOuterPath(Rect rect, { TextDirection textDirection }) {
     return Path()
       ..addRRect(_adjustBorderRadius(rect).toRRect(rect));
-  }
-
-  @override
-  _StadiumToRoundedRectangleBorder copyWith({ BorderSide side, BorderRadius borderRadius, double rectness }) {
-    return _StadiumToRoundedRectangleBorder(
-      side: side ?? this.side,
-      borderRadius: borderRadius ?? this.borderRadius,
-      rectness: rectness ?? this.rectness
-    );
   }
 
   @override

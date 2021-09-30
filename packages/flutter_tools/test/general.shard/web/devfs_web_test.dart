@@ -4,18 +4,21 @@
 
 import 'dart:io';
 
-import 'package:dwds/dwds.dart';
-import 'package:flutter_tools/src/artifacts.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/io.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/build_info.dart';
-import 'package:flutter_tools/src/build_runner/devfs_web.dart';
 import 'package:flutter_tools/src/compile.dart';
 import 'package:flutter_tools/src/convert.dart';
-import 'package:flutter_tools/src/globals.dart' as globals;
+import 'package:flutter_tools/src/build_runner/devfs_web.dart';
 import 'package:mockito/mockito.dart';
-import 'package:package_config/package_config.dart';
+// TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+// ignore: deprecated_member_use
+import 'package:package_config/discovery.dart';
+// TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+// ignore: deprecated_member_use
+import 'package:package_config/packages.dart';
+import 'package:platform/platform.dart';
+import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:shelf/shelf.dart';
 
 import '../../src/common.dart';
@@ -33,14 +36,14 @@ void main() {
   Testbed testbed;
   WebAssetServer webAssetServer;
   Platform linux;
-  PackageConfig packages;
+  // TODO(bkonyi): remove deprecated member usage, https://github.com/flutter/flutter/issues/51951
+  // ignore: deprecated_member_use
+  Packages packages;
   Platform windows;
   MockHttpServer mockHttpServer;
 
   setUpAll(() async {
-    packages = PackageConfig(<Package>[
-      Package('flutter_tools', Uri.file('/flutter_tools/lib/').normalizePath())
-    ]);
+    packages = await loadPackagesFile(Uri.base.resolve('.packages'));
   });
 
   setUp(() {
@@ -54,8 +57,6 @@ void main() {
         InternetAddress.loopbackIPv4,
         null,
         null,
-        null,
-
       );
     });
   });
@@ -107,27 +108,6 @@ void main() {
     Platform: () => linux,
   }));
 
-  test('Removes leading slashes for valid requests to avoid requesting outside'
-    ' of served directory', () => testbed.run(() async {
-    globals.fs.file('foo.png').createSync();
-    globals.fs.currentDirectory = globals.fs.directory('project_directory')
-      ..createSync();
-
-    final File source = globals.fs.file(globals.fs.path.join('web', 'foo.png'))
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(kTransparentImage);
-    final Response response = await webAssetServer
-      .handleRequest(Request('GET', Uri.parse('http://foobar////foo.png')));
-
-    expect(response.headers, allOf(<Matcher>[
-      containsPair(HttpHeaders.contentLengthHeader, source.lengthSync().toString()),
-      containsPair(HttpHeaders.contentTypeHeader, 'image/png'),
-      containsPair(HttpHeaders.etagHeader, isNotNull),
-      containsPair(HttpHeaders.cacheControlHeader, 'max-age=0, must-revalidate')
-    ]));
-    expect((await response.read().toList()).first, source.readAsBytesSync());
-  }));
-
   test('serves JavaScript files from in memory cache not from manifest', () => testbed.run(() async {
     webAssetServer.writeFile('foo.js', 'main() {}');
 
@@ -175,15 +155,6 @@ void main() {
       .handleRequest(Request('GET', Uri.parse('http://foobar/bar.js')));
 
     expect(response.statusCode, HttpStatus.notFound);
-  }));
-
-  test('serves default index.html', () => testbed.run(() async {
-    final Response response = await webAssetServer
-      .handleRequest(Request('GET', Uri.parse('http://foobar/')));
-
-    expect(response.statusCode, HttpStatus.ok);
-    expect((await response.read().toList()).first,
-      containsAllInOrder(utf8.encode('<html>')));
   }));
 
   test('handles web server paths without .lib extension', () => testbed.run(() async {
@@ -344,28 +315,9 @@ void main() {
     expect((await response.read().toList()).first, source.readAsBytesSync());
   }));
 
-  test('serves valid etag header for asset files with non-ascii chracters', () => testbed.run(() async {
-    globals.fs.file(globals.fs.path.join('build', 'flutter_assets', 'fooπ'))
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(<int>[1, 2, 3]);
-
-    final Response response = await webAssetServer
-      .handleRequest(Request('GET', Uri.parse('http://foobar/assets/fooπ')));
-    final String etag = response.headers[HttpHeaders.etagHeader];
-
-    expect(etag.runes, everyElement(predicate((int char) => char < 255)));
-  }));
-
   test('handles serving missing asset file', () => testbed.run(() async {
     final Response response = await webAssetServer
       .handleRequest(Request('GET', Uri.parse('http://foobar/assets/foo')));
-
-    expect(response.statusCode, HttpStatus.notFound);
-  }));
-
-  test('handles serving unresolvable package file', () => testbed.run(() async {
-    final Response response = await webAssetServer
-      .handleRequest(Request('GET', Uri.parse('http://foobar/packages/notpackage/file')));
 
     expect(response.statusCode, HttpStatus.notFound);
   }));
@@ -395,7 +347,6 @@ void main() {
   }));
 
   test('Can start web server with specified assets', () => testbed.run(() async {
-    globals.fs.file('.packages').writeAsStringSync('\n');
     final File outputFile = globals.fs.file(globals.fs.path.join('lib', 'main.dart'))
       ..createSync(recursive: true);
     outputFile.parent.childFile('a.sources').writeAsStringSync('');
@@ -408,7 +359,7 @@ void main() {
       any,
       any,
       outputPath: anyNamed('outputPath'),
-      packageConfig: anyNamed('packageConfig'),
+      packagesFilePath: anyNamed('packagesFilePath'),
     )).thenAnswer((Invocation invocation) async {
       return const CompilerOutput('a', 0, <Uri>[]);
     });
@@ -418,286 +369,66 @@ void main() {
       port: 0,
       packagesFilePath: '.packages',
       urlTunneller: null,
-      useSseForDebugProxy: true,
-      buildInfo: const BuildInfo(
-        BuildMode.debug,
-        '',
-        treeShakeIcons: false,
-        nullSafetyMode: NullSafetyMode.unsound,
-      ),
+      buildMode: BuildMode.debug,
       enableDwds: false,
       entrypoint: Uri.base,
       testMode: true,
       expressionCompiler: null,
-      chromiumLauncher: null,
-    );
-    webDevFS.requireJS.createSync(recursive: true);
-    webDevFS.stackTraceMapper.createSync(recursive: true);
-
-    final Uri uri = await webDevFS.create();
-    webDevFS.webAssetServer.entrypointCacheDirectory = globals.fs.currentDirectory;
-    final String webPrecompiledSdk = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledSdk);
-    final String webPrecompiledSdkSourcemaps = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledSdkSourcemaps);
-    final String webPrecompiledCanvaskitSdk = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledCanvaskitSdk);
-    final String webPrecompiledCanvaskitSdkSourcemaps = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledCanvaskitSdkSourcemaps);
-    globals.fs.currentDirectory
-      .childDirectory('lib')
-      .childFile('web_entrypoint.dart')
-      ..createSync(recursive: true)
-      ..writeAsStringSync('GENERATED');
-    globals.fs.file(webPrecompiledSdk)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('HELLO');
-    globals.fs.file(webPrecompiledSdkSourcemaps)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('THERE');
-    globals.fs.file(webPrecompiledCanvaskitSdk)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('OL');
-    globals.fs.file(webPrecompiledCanvaskitSdkSourcemaps)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('CHUM');
-
-    await webDevFS.update(
-      mainUri: globals.fs.file(globals.fs.path.join('lib', 'main.dart')).uri,
-      generator: residentCompiler,
-      trackWidgetCreation: true,
-      bundleFirstUpload: true,
-      invalidatedFiles: <Uri>[],
-      packageConfig: PackageConfig.empty,
-    );
-
-    expect(webDevFS.webAssetServer.getFile('require.js'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('stack_trace_mapper.js'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('main.dart'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('manifest.json'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('flutter_service_worker.js'), isNotNull);
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'HELLO');
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js.map'), 'THERE');
-
-    // Update to the SDK.
-   globals.fs.file(webPrecompiledSdk).writeAsStringSync('BELLOW');
-
-    // New SDK should be visible..
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'BELLOW');
-
-    // Toggle CanvasKit
-    expect(webDevFS.webAssetServer.canvasKitRendering, false);
-    webDevFS.webAssetServer.canvasKitRendering = true;
-
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'OL');
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js.map'), 'CHUM');
-
-    // Generated entrypoint.
-    expect(await webDevFS.webAssetServer.dartSourceContents('web_entrypoint.dart'),
-      contains('GENERATED'));
-
-    // served on localhost
-    expect(uri, Uri.http('localhost:0', ''));
-
-    await webDevFS.destroy();
-  }, overrides: <Type, Generator>{
-    Artifacts: () => Artifacts.test(),
-  }));
-
-  test('Can start web server with specified assets in sound null safety mode', () => testbed.run(() async {
-    globals.fs.file('.packages').writeAsStringSync('\n');
-    final File outputFile = globals.fs.file(globals.fs.path.join('lib', 'main.dart'))
-      ..createSync(recursive: true);
-    outputFile.parent.childFile('a.sources').writeAsStringSync('');
-    outputFile.parent.childFile('a.json').writeAsStringSync('{}');
-    outputFile.parent.childFile('a.map').writeAsStringSync('{}');
-    outputFile.parent.childFile('.packages').writeAsStringSync('\n');
-
-    final ResidentCompiler residentCompiler = MockResidentCompiler();
-    when(residentCompiler.recompile(
-      any,
-      any,
-      outputPath: anyNamed('outputPath'),
-      packageConfig: anyNamed('packageConfig'),
-    )).thenAnswer((Invocation invocation) async {
-      return const CompilerOutput('a', 0, <Uri>[]);
-    });
-
-    final WebDevFS webDevFS = WebDevFS(
-      hostname: 'localhost',
-      port: 0,
-      packagesFilePath: '.packages',
-      urlTunneller: null,
-      useSseForDebugProxy: true,
-      buildInfo: const BuildInfo(
-        BuildMode.debug,
-        '',
-        treeShakeIcons: false,
-        nullSafetyMode: NullSafetyMode.autodetect,
-      ),
-      enableDwds: false,
-      entrypoint: Uri.base,
-      testMode: true,
-      expressionCompiler: null,
-      chromiumLauncher: null,
-    );
-    webDevFS.requireJS.createSync(recursive: true);
-    webDevFS.stackTraceMapper.createSync(recursive: true);
-
-    final Uri uri = await webDevFS.create();
-    webDevFS.webAssetServer.entrypointCacheDirectory = globals.fs.currentDirectory;
-    globals.fs.currentDirectory
-      .childDirectory('lib')
-      .childFile('web_entrypoint.dart')
-      ..createSync(recursive: true)
-      ..writeAsStringSync('GENERATED');
-    final String webPrecompiledSoundSdk = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledSoundSdk);
-    final String webPrecompiledSoundSdkSourcemaps = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledSoundSdkSourcemaps);
-    final String webPrecompiledCanvaskitSoundSdk = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledCanvaskitSoundSdk);
-    final String webPrecompiledCanvaskitSoundSdkSourcemaps = globals.artifacts
-      .getArtifactPath(Artifact.webPrecompiledCanvaskitSoundSdkSourcemaps);
-    globals.fs.file(webPrecompiledSoundSdk)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('HELLO');
-    globals.fs.file(webPrecompiledSoundSdkSourcemaps)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('THERE');
-    globals.fs.file(webPrecompiledCanvaskitSoundSdk)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('OL');
-    globals.fs.file(webPrecompiledCanvaskitSoundSdkSourcemaps)
-      ..createSync(recursive: true)
-      ..writeAsStringSync('CHUM');
-
-    await webDevFS.update(
-      mainUri: globals.fs.file(globals.fs.path.join('lib', 'main.dart')).uri,
-      generator: residentCompiler,
-      trackWidgetCreation: true,
-      bundleFirstUpload: true,
-      invalidatedFiles: <Uri>[],
-      packageConfig: PackageConfig.empty,
-    );
-
-    expect(webDevFS.webAssetServer.getFile('require.js'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('stack_trace_mapper.js'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('main.dart'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('manifest.json'), isNotNull);
-    expect(webDevFS.webAssetServer.getFile('flutter_service_worker.js'), isNotNull);
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'HELLO');
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js.map'), 'THERE');
-
-    // Update to the SDK.
-    globals.fs.file(webPrecompiledSoundSdk).writeAsStringSync('BELLOW');
-
-    // New SDK should be visible..
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'BELLOW');
-
-    // Toggle CanvasKit
-    webDevFS.webAssetServer.canvasKitRendering = true;
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'OL');
-    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js.map'), 'CHUM');
-
-    // Generated entrypoint.
-    expect(await webDevFS.webAssetServer.dartSourceContents('web_entrypoint.dart'),
-      contains('GENERATED'));
-
-    // served on localhost
-    expect(uri, Uri.http('localhost:0', ''));
-
-    await webDevFS.destroy();
-  }, overrides: <Type, Generator>{
-    Artifacts: () => Artifacts.test(),
-  }));
-
-  test('Can start web server with hostname any', () => testbed.run(() async {
-    globals.fs.file('.packages').writeAsStringSync('\n');
-    final File outputFile = globals.fs.file(globals.fs.path.join('lib', 'main.dart'))
-      ..createSync(recursive: true);
-    outputFile.parent.childFile('a.sources').writeAsStringSync('');
-    outputFile.parent.childFile('a.json').writeAsStringSync('{}');
-    outputFile.parent.childFile('a.map').writeAsStringSync('{}');
-    outputFile.parent.childFile('.packages').writeAsStringSync('\n');
-
-    final ResidentCompiler residentCompiler = MockResidentCompiler();
-    when(residentCompiler.recompile(
-      any,
-      any,
-      outputPath: anyNamed('outputPath'),
-      packageConfig: anyNamed('packageConfig'),
-    )).thenAnswer((Invocation invocation) async {
-      return const CompilerOutput('a', 0, <Uri>[]);
-    });
-
-    final WebDevFS webDevFS = WebDevFS(
-      hostname: 'any',
-      port: 0,
-      packagesFilePath: '.packages',
-      urlTunneller: null,
-      useSseForDebugProxy: true,
-      buildInfo: BuildInfo.debug,
-      enableDwds: false,
-      entrypoint: Uri.base,
-      testMode: true,
-      expressionCompiler: null,
-      chromiumLauncher: null,
-    );
-    webDevFS.requireJS.createSync(recursive: true);
-    webDevFS.stackTraceMapper.createSync(recursive: true);
-
-    final Uri uri = await webDevFS.create();
-
-    expect(uri, Uri.http('localhost:0', ''));
-    await webDevFS.destroy();
-  }));
-
-  test('Can start web server with canvaskit enabled', () => testbed.run(() async {
-    globals.fs.file('.packages').writeAsStringSync('\n');
-    final File outputFile = globals.fs.file(globals.fs.path.join('lib', 'main.dart'))
-      ..createSync(recursive: true);
-    outputFile.parent.childFile('a.sources').writeAsStringSync('');
-    outputFile.parent.childFile('a.json').writeAsStringSync('{}');
-    outputFile.parent.childFile('a.map').writeAsStringSync('{}');
-    outputFile.parent.childFile('.packages').writeAsStringSync('\n');
-
-    final ResidentCompiler residentCompiler = MockResidentCompiler();
-    when(residentCompiler.recompile(
-      any,
-      any,
-      outputPath: anyNamed('outputPath'),
-      packageConfig: anyNamed('packageConfig'),
-    )).thenAnswer((Invocation invocation) async {
-      return const CompilerOutput('a', 0, <Uri>[]);
-    });
-
-    final WebDevFS webDevFS = WebDevFS(
-      hostname: 'localhost',
-      port: 0,
-      packagesFilePath: '.packages',
-      urlTunneller: null,
-      useSseForDebugProxy: true,
-      buildInfo: const BuildInfo(
-        BuildMode.debug,
-        '',
-        treeShakeIcons: false,
-        dartDefines: <String>[
-          'FLUTTER_WEB_USE_SKIA=true',
-        ]
-      ),
-      enableDwds: false,
-      entrypoint: Uri.base,
-      testMode: true,
-      expressionCompiler: null,
-      chromiumLauncher: null,
     );
     webDevFS.requireJS.createSync(recursive: true);
     webDevFS.stackTraceMapper.createSync(recursive: true);
 
     await webDevFS.create();
+    webDevFS.webAssetServer.entrypointCacheDirectory = globals.fs.currentDirectory;
+    globals.fs.currentDirectory
+      .childDirectory('lib')
+      .childFile('web_entrypoint.dart')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('GENERATED');
+    webDevFS.webAssetServer.dartSdk
+      ..createSync(recursive: true)
+      ..writeAsStringSync('HELLO');
+    webDevFS.webAssetServer.dartSdkSourcemap
+      ..createSync(recursive: true)
+      ..writeAsStringSync('THERE');
+    webDevFS.webAssetServer.canvasKitDartSdk
+      ..createSync(recursive: true)
+      ..writeAsStringSync('OL');
+    webDevFS.webAssetServer.canvasKitDartSdkSourcemap
+      ..createSync(recursive: true)
+      ..writeAsStringSync('CHUM');
+    webDevFS.webAssetServer.dartSdkSourcemap.createSync(recursive: true);
 
-    expect(webDevFS.webAssetServer.canvasKitRendering, true);
+    await webDevFS.update(
+      mainPath: globals.fs.path.join('lib', 'main.dart'),
+      generator: residentCompiler,
+      trackWidgetCreation: true,
+      bundleFirstUpload: true,
+      invalidatedFiles: <Uri>[],
+    );
+
+    expect(webDevFS.webAssetServer.getFile('require.js'), isNotNull);
+    expect(webDevFS.webAssetServer.getFile('stack_trace_mapper.js'), isNotNull);
+    expect(webDevFS.webAssetServer.getFile('main.dart'), isNotNull);
+    expect(webDevFS.webAssetServer.getFile('manifest.json'), isNotNull);
+    expect(webDevFS.webAssetServer.getFile('flutter_service_worker.js'), isNotNull);
+    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'HELLO');
+    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js.map'), 'THERE');
+
+    // Update to the SDK.
+    webDevFS.webAssetServer.dartSdk.writeAsStringSync('BELLOW');
+
+    // New SDK should be visible..
+    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'BELLOW');
+
+    // Toggle CanvasKit
+    webDevFS.webAssetServer.canvasKitRendering = true;
+    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js'), 'OL');
+    expect(await webDevFS.webAssetServer.dartSourceContents('dart_sdk.js.map'), 'CHUM');
+
+    // Generated entrypoint.
+    expect(await webDevFS.webAssetServer.dartSourceContents('web_entrypoint.dart'),
+      contains('GENERATED'));
 
     await webDevFS.destroy();
   }));
@@ -705,4 +436,3 @@ void main() {
 
 class MockHttpServer extends Mock implements HttpServer {}
 class MockResidentCompiler extends Mock implements ResidentCompiler {}
-class MockDwds extends Mock implements Dwds {}

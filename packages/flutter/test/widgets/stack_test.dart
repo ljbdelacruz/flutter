@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -378,15 +376,6 @@ void main() {
     expect(renderBox.size.height, equals(12.0));
   });
 
-  testWidgets('Can set and update clipBehavior', (WidgetTester tester) async {
-    await tester.pumpWidget(Stack(textDirection: TextDirection.ltr));
-    final RenderStack renderObject = tester.allRenderObjects.whereType<RenderStack>().first;
-    expect(renderObject.clipBehavior, equals(Clip.hardEdge));
-
-    await tester.pumpWidget(Stack(textDirection: TextDirection.ltr, clipBehavior: Clip.hardEdge));
-    expect(renderObject.clipBehavior, equals(Clip.hardEdge));
-  });
-
   testWidgets('IndexedStack with null index', (WidgetTester tester) async {
     bool tapped;
 
@@ -423,16 +412,15 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Center(
           child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: const <Widget>[
-              SizedBox(
+            children: <Widget>[
+              Container(
                 width: 100.0,
                 height: 100.0,
               ),
               Positioned(
                 top: 0.0,
                 left: 0.0,
-                child: SizedBox(
+                child: Container(
                   width: 200.0,
                   height: 200.0,
                 ),
@@ -454,16 +442,15 @@ void main() {
         child: Center(
           child: Stack(
             overflow: Overflow.visible,
-            clipBehavior: Clip.none,
-            children: const <Widget>[
-              SizedBox(
+            children: <Widget>[
+              Container(
                 width: 100.0,
                 height: 100.0,
               ),
               Positioned(
                 top: 0.0,
                 left: 0.0,
-                child: SizedBox(
+                child: Container(
                   width: 200.0,
                   height: 200.0,
                 ),
@@ -759,26 +746,5 @@ void main() {
     expect(tester.getRect(find.byType(SizedBox).at(6)), const Rect.fromLTWH(700.0, 0.0,   100.0, 100.0));
     expect(tester.getRect(find.byType(SizedBox).at(7)), const Rect.fromLTWH(0.0,   0.0,   100.0, 100.0));
     expect(tester.getRect(find.byType(SizedBox).at(8)), const Rect.fromLTWH(0.0,   500.0, 100.0, 100.0));
-  });
-
-  testWidgets('Stack error messages', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      Stack(),
-    );
-    expect(
-      tester.takeException().toString(),
-      'No Directionality widget found.\n'
-      'Stack widgets require a Directionality widget ancestor to resolve the \'alignment\' argument.\n'
-      'The default value for \'alignment\' is AlignmentDirectional.topStart, which requires a text direction.\n'
-      'The specific widget that could not find a Directionality ancestor was:\n'
-      '  Stack\n'
-      'The ownership chain for the affected widget is: "Stack ← [root]"\n'
-      'Typically, the Directionality widget is introduced by the MaterialApp or WidgetsApp widget at the '
-      'top of your application widget tree. It determines the ambient reading direction and is used, for '
-      'example, to determine how to lay out text, how to interpret "start" and "end" values, and to resolve '
-      'EdgeInsetsDirectional, AlignmentDirectional, and other *Directional objects.\n'
-      'Instead of providing a Directionality widget, another solution would be passing a non-directional '
-      '\'alignment\', or an explicit \'textDirection\', to the Stack.'
-    );
   });
 }

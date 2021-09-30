@@ -6,6 +6,7 @@ import 'package:file/memory.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/logger.dart';
 import 'package:flutter_tools/src/build_system/depfile.dart';
+import 'package:platform/platform.dart';
 
 import '../../src/common.dart';
 
@@ -18,6 +19,7 @@ void main() {
     depfileService = DepfileService(
       logger: BufferLogger.test(),
       fileSystem: fileSystem,
+      platform: FakePlatform(operatingSystem: 'linux'),
     );
   });
   testWithoutContext('Can parse depfile from file', () {
@@ -63,6 +65,7 @@ a.txt c.txt d.txt: b.txt
     depfileService = DepfileService(
       logger: BufferLogger.test(),
       fileSystem: fileSystem,
+      platform: FakePlatform(operatingSystem: 'windows'),
     );
     final File depfileSource = fileSystem.file('example.d')..writeAsStringSync(r'''
 C:\\a.txt: C:\\b.txt
@@ -78,6 +81,7 @@ C:\\a.txt: C:\\b.txt
     depfileService = DepfileService(
       logger: BufferLogger.test(),
       fileSystem: fileSystem,
+      platform: FakePlatform(operatingSystem: 'windows'),
     );
     final File inputFile = fileSystem.directory(r'Hello Flutter').childFile('a.txt').absolute
       ..createSync(recursive: true);

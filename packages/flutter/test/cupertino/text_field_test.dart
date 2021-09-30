@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 import 'dart:ui' as ui show BoxHeightStyle, BoxWidthStyle, Color;
 
@@ -173,11 +171,8 @@ void main() {
 
   Offset textOffsetToPosition(WidgetTester tester, int offset) => textOffsetToBottomLeftPosition(tester, offset) + const Offset(0, -2);
 
-  setUp(() async {
+  setUp(() {
     EditableText.debugDeterministicCursor = false;
-    // Fill the clipboard so that the Paste option is available in the text
-    // selection menu.
-    await Clipboard.setData(const ClipboardData(text: 'Clipboard data'));
   });
 
   testWidgets(
@@ -1550,7 +1545,7 @@ void main() {
       await tester.tapAt(textOffsetToPosition(tester, index));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tapAt(textOffsetToPosition(tester, index));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(
         controller.selection,
         const TextSelection(baseOffset: 0, extentOffset: 7),
@@ -1590,7 +1585,7 @@ void main() {
         const TextSelection.collapsed(offset: 8, affinity: TextAffinity.downstream),
       );
       await tester.tapAt(textfieldStart + const Offset(150.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Second tap selects the word around the cursor.
       expect(
@@ -1626,7 +1621,7 @@ void main() {
       final TestGesture gesture =
          await tester.startGesture(textfieldStart + const Offset(150.0, 5.0));
       // Hold the press.
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(
         controller.selection,
@@ -1680,7 +1675,7 @@ void main() {
       await tester.pump();
 
       // Plain collapsed selection at the edge of first word. In iOS 12, the
-      // first tap after a double tap ends up putting the cursor at where
+      // the first tap after a double tap ends up putting the cursor at where
       // you tapped instead of the edge like every other single tap. This is
       // likely a bug in iOS 12 and not present in other versions.
       expect(
@@ -1765,7 +1760,7 @@ void main() {
       final TestGesture gesture =
          await tester.startGesture(textfieldStart + const Offset(150.0, 5.0));
       // Hold the press.
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // The obscured text is treated as one word, should select all
       expect(
@@ -1851,7 +1846,7 @@ void main() {
       final Offset textfieldStart = tester.getTopLeft(find.byType(CupertinoTextField));
 
       await tester.longPressAt(textfieldStart + const Offset(50.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Collapsed cursor for iOS long press.
       expect(
@@ -1951,7 +1946,7 @@ void main() {
       expect(find.byType(CupertinoButton), findsNothing);
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The selection isn't affected by the gesture lift.
       expect(
@@ -2026,7 +2021,7 @@ void main() {
     expect(find.byType(CupertinoButton), findsNothing);
 
     await gesture.up();
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // The selection isn't affected by the gesture lift.
     expect(
@@ -2081,7 +2076,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       await tester.longPressAt(textfieldStart + const Offset(100.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Plain collapsed selection at the exact tap position.
       expect(
@@ -2123,7 +2118,7 @@ void main() {
         const TextSelection.collapsed(offset: 8, affinity: TextAffinity.downstream),
       );
       await tester.tapAt(textfieldStart + const Offset(150.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Double tap selection.
       expect(
@@ -2160,7 +2155,7 @@ void main() {
         const TextSelection.collapsed(offset: 7, affinity: TextAffinity.upstream),
       );
       await tester.tapAt(textfieldStart + const Offset(50.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(
         controller.selection,
         const TextSelection(baseOffset: 0, extentOffset: 7),
@@ -2176,7 +2171,7 @@ void main() {
         const TextSelection.collapsed(offset: 7, affinity: TextAffinity.upstream),
       );
       await tester.tapAt(textfieldStart + const Offset(100.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(
         controller.selection,
         const TextSelection(baseOffset: 0, extentOffset: 7),
@@ -2191,7 +2186,7 @@ void main() {
         const TextSelection.collapsed(offset: 8, affinity: TextAffinity.downstream),
       );
       await tester.tapAt(textfieldStart + const Offset(150.0, 5.0));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(
         controller.selection,
         const TextSelection(baseOffset: 8, extentOffset: 12),
@@ -2235,7 +2230,7 @@ void main() {
     );
 
     await gesture.up();
-    await tester.pumpAndSettle();
+    await tester.pump();
     // Shows toolbar.
     expect(find.byType(CupertinoButton), findsNWidgets(3));
   });
@@ -3628,7 +3623,7 @@ void main() {
                     focusNode: focusNode,
                     expands: true,
                     maxLines: null,
-                    prefix: const SizedBox(
+                    prefix: Container(
                       height: 100,
                       width: 10,
                     ),
@@ -3681,7 +3676,7 @@ void main() {
                     focusNode: focusNode,
                     expands: true,
                     maxLines: null,
-                    prefix: const SizedBox(
+                    prefix: Container(
                       height: 100,
                       width: 10,
                     ),
@@ -3735,7 +3730,7 @@ void main() {
                     focusNode: focusNode,
                     expands: true,
                     maxLines: null,
-                    prefix: const SizedBox(
+                    prefix: Container(
                       height: 100,
                       width: 10,
                     ),
@@ -3789,7 +3784,7 @@ void main() {
                     focusNode: focusNode,
                     expands: true,
                     maxLines: null,
-                    prefix: const SizedBox(
+                    prefix: Container(
                       height: 100,
                       width: 10,
                     ),
@@ -3847,7 +3842,7 @@ void main() {
 
         // Long press shows the selection menu.
         await tester.longPressAt(textOffsetToPosition(tester, 0));
-        await tester.pumpAndSettle();
+        await tester.pump();
         expect(find.text('Paste'), findsOneWidget);
       },
     );

@@ -9,8 +9,8 @@ import 'package:file/file.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p; // ignore: package_path_import
 
+import '../globals.dart' as globals;
 import 'common.dart' show throwToolExit;
-import 'platform.dart';
 
 // The Flutter tool hits file system errors that only the end-user can address.
 // We would like these errors to not hit crash logging. In these cases, we
@@ -30,40 +30,13 @@ import 'platform.dart';
 /// example, the tool should gernerally be able to continue executing even if it
 /// fails to delete a file.
 class ErrorHandlingFileSystem extends ForwardingFileSystem {
-  ErrorHandlingFileSystem({
-    @required FileSystem delegate,
-    @required Platform platform,
-  }) :
-      assert(delegate != null),
-      assert(platform != null),
-      _platform = platform,
-      super(delegate);
+  ErrorHandlingFileSystem(FileSystem delegate) : super(delegate);
 
   @visibleForTesting
   FileSystem get fileSystem => delegate;
 
-  final Platform _platform;
-
   @override
-  File file(dynamic path) => ErrorHandlingFile(
-    platform: _platform,
-    fileSystem: delegate,
-    delegate: delegate.file(path),
-  );
-
-  @override
-  Directory directory(dynamic path) => ErrorHandlingDirectory(
-    platform: _platform,
-    fileSystem: delegate,
-    delegate: delegate.directory(path),
-  );
-
-  @override
-  Link link(dynamic path) => ErrorHandlingLink(
-    platform: _platform,
-    fileSystem: delegate,
-    delegate: delegate.link(path),
-  );
+  File file(dynamic path) => ErrorHandlingFile(delegate, delegate.file(path));
 
   // Caching the path context here and clearing when the currentDirectory setter
   // is updated works since the flutter tool restricts usage of dart:io directly
@@ -87,15 +60,7 @@ class ErrorHandlingFileSystem extends ForwardingFileSystem {
 class ErrorHandlingFile
     extends ForwardingFileSystemEntity<File, io.File>
     with ForwardingFile {
-  ErrorHandlingFile({
-    @required Platform platform,
-    @required this.fileSystem,
-    @required this.delegate,
-  }) :
-    assert(platform != null),
-    assert(fileSystem != null),
-    assert(delegate != null),
-    _platform = platform;
+  ErrorHandlingFile(this.fileSystem, this.delegate);
 
   @override
   final io.File delegate;
@@ -103,28 +68,17 @@ class ErrorHandlingFile
   @override
   final FileSystem fileSystem;
 
-  final Platform _platform;
+  @override
+  File wrapFile(io.File delegate) =>
+    ErrorHandlingFile(fileSystem, delegate);
 
   @override
-  File wrapFile(io.File delegate) => ErrorHandlingFile(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
+  Directory wrapDirectory(io.Directory delegate) =>
+    ErrorHandlingDirectory(fileSystem, delegate);
 
   @override
-  Directory wrapDirectory(io.Directory delegate) => ErrorHandlingDirectory(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
-
-  @override
-  Link wrapLink(io.Link delegate) => ErrorHandlingLink(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
+  Link wrapLink(io.Link delegate) =>
+    ErrorHandlingLink(fileSystem, delegate);
 
   @override
   Future<File> writeAsBytes(
@@ -138,7 +92,6 @@ class ErrorHandlingFile
         mode: mode,
         flush: flush,
       )),
-      platform: _platform,
       failureMessage: 'Flutter failed to write to a file at "${delegate.path}"',
     );
   }
@@ -151,7 +104,6 @@ class ErrorHandlingFile
   }) {
     _runSync<void>(
       () => delegate.writeAsBytesSync(bytes, mode: mode, flush: flush),
-      platform: _platform,
       failureMessage: 'Flutter failed to write to a file at "${delegate.path}"',
     );
   }
@@ -170,7 +122,6 @@ class ErrorHandlingFile
         encoding: encoding,
         flush: flush,
       )),
-      platform: _platform,
       failureMessage: 'Flutter failed to write to a file at "${delegate.path}"',
     );
   }
@@ -189,27 +140,69 @@ class ErrorHandlingFile
         encoding: encoding,
         flush: flush,
       ),
-      platform: _platform,
       failureMessage: 'Flutter failed to write to a file at "${delegate.path}"',
     );
   }
 
   @override
   String toString() => delegate.toString();
+
+  Future<T> _run<T>(Future<T> Function() op, { String failureMessage }) async {
+    try {
+      return await op();
+    } on FileSystemException catch (e) {
+      if (globals.platform.isWindows) {
+        _handleWindowsException(e, failureMessage);
+      }
+      rethrow;
+    }
+  }
+
+  T _runSync<T>(T Function() op, { String failureMessage }) {
+    try {
+      return op();
+    } on FileSystemException catch (e) {
+      if (globals.platform.isWindows) {
+        _handleWindowsException(e, failureMessage);
+      }
+      rethrow;
+    }
+  }
+
+  void _handleWindowsException(FileSystemException e, String message) {
+    // From:
+    // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+    const int kDeviceFull = 112;
+    const int kUserMappedSectionOpened = 1224;
+    final int errorCode = e.osError?.errorCode ?? 0;
+    // Catch errors and bail when:
+    switch (errorCode) {
+      case kDeviceFull:
+        throwToolExit(
+          '$message. The target device is full.'
+          '\n$e\n'
+          'Free up space and try again.',
+        );
+        break;
+      case kUserMappedSectionOpened:
+        throwToolExit(
+          '$message. The file is being used by another program.'
+          '\n$e\n'
+          'Do you have an antivirus program running? '
+          'Try disabling your antivirus program and try again.',
+        );
+        break;
+      default:
+        // Caller must rethrow the exception.
+        break;
+    }
+  }
 }
 
 class ErrorHandlingDirectory
     extends ForwardingFileSystemEntity<Directory, io.Directory>
     with ForwardingDirectory<Directory> {
-  ErrorHandlingDirectory({
-    @required Platform platform,
-    @required this.fileSystem,
-    @required this.delegate,
-  }) :
-    assert(platform != null),
-    assert(fileSystem != null),
-    assert(delegate != null),
-    _platform = platform;
+  ErrorHandlingDirectory(this.fileSystem, this.delegate);
 
   @override
   final io.Directory delegate;
@@ -217,28 +210,17 @@ class ErrorHandlingDirectory
   @override
   final FileSystem fileSystem;
 
-  final Platform _platform;
+  @override
+  File wrapFile(io.File delegate) =>
+    ErrorHandlingFile(fileSystem, delegate);
 
   @override
-  File wrapFile(io.File delegate) => ErrorHandlingFile(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
+  Directory wrapDirectory(io.Directory delegate) =>
+    ErrorHandlingDirectory(fileSystem, delegate);
 
   @override
-  Directory wrapDirectory(io.Directory delegate) => ErrorHandlingDirectory(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
-
-  @override
-  Link wrapLink(io.Link delegate) => ErrorHandlingLink(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
+  Link wrapLink(io.Link delegate) =>
+    ErrorHandlingLink(fileSystem, delegate);
 
   // For the childEntity methods, we first obtain an instance of the entity
   // from the underlying file system, then invoke childEntity() on it, then
@@ -256,41 +238,13 @@ class ErrorHandlingDirectory
     wrapLink(fileSystem.directory(delegate).childLink(basename));
 
   @override
-  Future<Directory> createTemp([String prefix]) {
-    return _run<Directory>(
-      () async => wrap(await delegate.createTemp(prefix)),
-      platform: _platform,
-      failureMessage:
-        'Flutter failed to create a temporary directory with prefix "$prefix"',
-    );
-  }
-
-  @override
-  Directory createTempSync([String prefix]) {
-    return _runSync<Directory>(
-      () => wrap(delegate.createTempSync(prefix)),
-      platform: _platform,
-      failureMessage:
-        'Flutter failed to create a temporary directory with prefix "$prefix"',
-    );
-  }
-
-  @override
   String toString() => delegate.toString();
 }
 
 class ErrorHandlingLink
     extends ForwardingFileSystemEntity<Link, io.Link>
     with ForwardingLink {
-  ErrorHandlingLink({
-    @required Platform platform,
-    @required this.fileSystem,
-    @required this.delegate,
-  }) :
-    assert(platform != null),
-    assert(fileSystem != null),
-    assert(delegate != null),
-    _platform = platform;
+  ErrorHandlingLink(this.fileSystem, this.delegate);
 
   @override
   final io.Link delegate;
@@ -298,113 +252,18 @@ class ErrorHandlingLink
   @override
   final FileSystem fileSystem;
 
-  final Platform _platform;
+  @override
+  File wrapFile(io.File delegate) =>
+    ErrorHandlingFile(fileSystem, delegate);
 
   @override
-  File wrapFile(io.File delegate) => ErrorHandlingFile(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
+  Directory wrapDirectory(io.Directory delegate) =>
+    ErrorHandlingDirectory(fileSystem, delegate);
 
   @override
-  Directory wrapDirectory(io.Directory delegate) => ErrorHandlingDirectory(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
-
-  @override
-  Link wrapLink(io.Link delegate) => ErrorHandlingLink(
-    platform: _platform,
-    fileSystem: fileSystem,
-    delegate: delegate,
-  );
+  Link wrapLink(io.Link delegate) =>
+    ErrorHandlingLink(fileSystem, delegate);
 
   @override
   String toString() => delegate.toString();
-}
-
-Future<T> _run<T>(Future<T> Function() op, {
-  @required Platform platform,
-  String failureMessage,
-}) async {
-  assert(platform != null);
-  try {
-    return await op();
-  } on FileSystemException catch (e) {
-    if (platform.isWindows) {
-      _handleWindowsException(e, failureMessage);
-    } else if (platform.isLinux) {
-      _handleLinuxException(e, failureMessage);
-    }
-    rethrow;
-  }
-}
-
-T _runSync<T>(T Function() op, {
-  @required Platform platform,
-  String failureMessage,
-}) {
-  assert(platform != null);
-  try {
-    return op();
-  } on FileSystemException catch (e) {
-    if (platform.isWindows) {
-      _handleWindowsException(e, failureMessage);
-    } else if (platform.isLinux) {
-      _handleLinuxException(e, failureMessage);
-    }
-    rethrow;
-  }
-}
-
-void _handleLinuxException(FileSystemException e, String message) {
-  // From:
-  // https://github.com/torvalds/linux/blob/master/include/uapi/asm-generic/errno.h
-  // https://github.com/torvalds/linux/blob/master/include/uapi/asm-generic/errno-base.h
-  const int enospc = 28;
-  final int errorCode = e.osError?.errorCode ?? 0;
-  // Catch errors and bail when:
-  switch (errorCode) {
-    case enospc:
-      throwToolExit(
-        '$message. The target device is full.'
-        '\n$e\n'
-        'Free up space and try again.',
-      );
-      break;
-    default:
-      // Caller must rethrow the exception.
-      break;
-  }
-}
-
-void _handleWindowsException(FileSystemException e, String message) {
-  // From:
-  // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
-  const int kDeviceFull = 112;
-  const int kUserMappedSectionOpened = 1224;
-  final int errorCode = e.osError?.errorCode ?? 0;
-  // Catch errors and bail when:
-  switch (errorCode) {
-    case kDeviceFull:
-      throwToolExit(
-        '$message. The target device is full.'
-        '\n$e\n'
-        'Free up space and try again.',
-      );
-      break;
-    case kUserMappedSectionOpened:
-      throwToolExit(
-        '$message. The file is being used by another program.'
-        '\n$e\n'
-        'Do you have an antivirus program running? '
-        'Try disabling your antivirus program and try again.',
-      );
-      break;
-    default:
-      // Caller must rethrow the exception.
-      break;
-  }
 }

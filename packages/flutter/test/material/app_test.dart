@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mockito/mockito.dart';
 
 class StateMarker extends StatefulWidget {
   const StateMarker({ Key key, this.child }) : super(key: key);
@@ -506,7 +505,7 @@ void main() {
     );
 
     // Default US "select all" text.
-    expect(find.text('Select all'), findsOneWidget);
+    expect(find.text('SELECT ALL'), findsOneWidget);
     // Default Cupertino US "select all" text.
     expect(find.text('Select All'), findsOneWidget);
   });
@@ -836,22 +835,4 @@ void main() {
   });
 }
 
-class MockAccessibilityFeature implements AccessibilityFeatures {
-  @override
-  bool get accessibleNavigation => true;
-
-  @override
-  bool get boldText => true;
-
-  @override
-  bool get disableAnimations => true;
-
-  @override
-  bool get highContrast => true;
-
-  @override
-  bool get invertColors => true;
-
-  @override
-  bool get reduceMotion => true;
-}
+class MockAccessibilityFeature extends Mock implements AccessibilityFeatures {}
