@@ -4,7 +4,7 @@
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-
+import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'expand_icon.dart';
 import 'ink_well.dart';
@@ -461,6 +461,7 @@ class _ExpansionPanelListState extends State<ExpansionPanelList> {
       Widget expandIconContainer = Container(
         margin: const EdgeInsetsDirectional.only(end: 8.0),
         child: ExpandIcon(
+          color: Colors.white,
           isExpanded: _isChildExpanded(index),
           padding: const EdgeInsets.all(16.0),
           onPressed: !child.canTapOnHeader
